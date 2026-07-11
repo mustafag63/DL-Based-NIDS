@@ -1,0 +1,8 @@
+{
+  "window_label": "window_03_5pct",
+  "target_pct": 5,
+  "start_iso": "2026-07-10T15:46:24.687Z",
+  "end_iso": "2026-07-10T16:46:38.621Z",
+  "actual_attack_pct": 5.614282,
+  "status": "collected"
+}

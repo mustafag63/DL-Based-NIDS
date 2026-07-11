@@ -1,0 +1,24 @@
+{
+  "seed": 3,
+  "variant": "no_conn_state",
+  "n_features": 14,
+  "train_time_sec": 5.04,
+  "epochs_run": 44,
+  "final_train_loss": 0.041759274899959564,
+  "final_val_loss": 0.04294171556830406,
+  "test_auc": 0.9354362062376701,
+  "threshold_pctl95": {
+    "precision": 0.9588347055098163,
+    "recall": 0.7955859169732002,
+    "f1": 0.8696151636990236,
+    "accuracy": 0.9310135237805804,
+    "threshold": 0.14602408707141873
+  },
+  "threshold_youden": {
+    "precision": 0.5639344262295082,
+    "recall": 0.9942196531791907,
+    "f1": 0.7196652719665272,
+    "accuracy": 0.776021881173074,
+    "threshold": 0.014499276876449585
+  }
+}
