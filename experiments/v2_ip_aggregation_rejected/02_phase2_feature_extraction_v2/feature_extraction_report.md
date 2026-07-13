@@ -34,7 +34,7 @@ All 8 windows (window_01-08) included. window_01_0pct was re-captured after a Ze
 
 ## Final feature matrix
 
-Shape: (36705, 22)
+Shape: (36705, 26)
 
 Saved files:
 - `/Users/mustafa/Desktop/NIDS/data/ids-dataset-features/features_all_windows.csv`
@@ -43,7 +43,7 @@ Saved files:
 
 ## Features used
 
-Numeric (StandardScaler, **fit only on the train split - leakage-free**, transform applied to all rows): ['duration', 'orig_bytes', 'resp_bytes', 'orig_pkts', 'resp_pkts', 'bytes_per_sec', 'pkts_per_sec', 'byte_ratio']
+Numeric (StandardScaler, **fit only on the train split - leakage-free**, transform applied to all rows): ['duration', 'orig_bytes', 'resp_bytes', 'orig_pkts', 'resp_pkts', 'bytes_per_sec', 'pkts_per_sec', 'byte_ratio', 'conn_count_60s', 'unique_dst_ports_60s', 'unique_dst_ips_60s', 'failed_conn_ratio_60s']
 
 Categorical (OneHotEncoder, global fit): ['proto', 'service', 'conn_state']
 

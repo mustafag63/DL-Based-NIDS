@@ -216,6 +216,15 @@ the old, leaky fit).
 
 ## Phase 3 — Autoencoder Architecture, Training, and Ablation
 
+**Official result:** the numbers in this section (18/14 flow-level
+columns, `04_phase3_models/` + `05_phase3_results/`, F1=0.862, aggregate
+recall=80%) are the project's current, adopted result. A follow-up
+experiment that added 4 IP-based rolling time-window features raised
+aggregate recall to 100% but was **not adopted** — the gain was found to
+be partly a lab-specific artifact rather than a clean behavioral signal.
+It is archived, with full rejection rationale, at
+[`experiments/v2_ip_aggregation_rejected/README.md`](experiments/v2_ip_aggregation_rejected/README.md).
+
 ### Environment
 
 TensorFlow 2.21.0 on Mac (Apple Silicon, arm64), CPU-only
@@ -305,12 +314,16 @@ anomaly signals) carry real, independent signal.
 - **Phase 3 (autoencoder + ablation):** complete for the minimal
   end-to-end pipeline. Autoencoder beats the naive baseline and shows
   low conn_state dependency.
-- **Open TODO:** IP-based time-window aggregation features
-  (`conn_count_60s`, `unique_dst_ports_60s`, `unique_dst_ips_60s`,
-  `failed_conn_ratio_60s`) were deliberately deferred until after this
-  minimal pipeline was validated. Given current results (AUC≈0.95,
-  beats naive baseline, low conn_state dependency), the next decision
-  is whether this added complexity is still warranted.
+- **IP-based time-window aggregation — tried, archived, not adopted:**
+  the deferred TODO (`conn_count_60s`, `unique_dst_ports_60s`,
+  `unique_dst_ips_60s`, `failed_conn_ratio_60s`) was implemented and
+  evaluated (10 retrained models, v2). It fixed the v1 model's apache_bench
+  blind spot (flow-level recall 0% -> 100%), but root-cause analysis
+  showed the low-volume-attack portion of that gain rides on a
+  lab-specific attack-sequencing artifact (the portscan that always
+  precedes apache_bench from the same source IP), not apache_bench's own
+  behavior — so it was not adopted as the official pipeline. Full
+  writeup: [`experiments/v2_ip_aggregation_rejected/README.md`](experiments/v2_ip_aggregation_rejected/README.md).
 - **Not done / limitations:** persona-level (Locust
   Browsing/Searching/FormFilling) features were investigated and found
   infeasible to attribute reliably at flow level — not included in the
