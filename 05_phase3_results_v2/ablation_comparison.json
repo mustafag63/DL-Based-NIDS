@@ -1,0 +1,54 @@
+{
+  "full_features": {
+    "variant": "full_features",
+    "n_features": 22,
+    "test_auc": {
+      "mean": 1.0,
+      "std": 0.0
+    },
+    "threshold_pctl95": {
+      "precision": {
+        "mean": 0.930736741953892,
+        "std": 0.00880939260896601
+      },
+      "recall": {
+        "mean": 1.0,
+        "std": 0.0
+      },
+      "f1": {
+        "mean": 0.9641044307650335,
+        "std": 0.004726378681536715
+      },
+      "accuracy": {
+        "mean": 0.9784531226257407,
+        "std": 0.002940822465498356
+      }
+    }
+  },
+  "no_conn_state": {
+    "variant": "no_conn_state",
+    "n_features": 18,
+    "test_auc": {
+      "mean": 1.0,
+      "std": 0.0
+    },
+    "threshold_pctl95": {
+      "precision": {
+        "mean": 0.9508890892376197,
+        "std": 0.017834630477436657
+      },
+      "recall": {
+        "mean": 1.0,
+        "std": 0.0
+      },
+      "f1": {
+        "mean": 0.9747400819949797,
+        "std": 0.00944194991666711
+      },
+      "accuracy": {
+        "mean": 0.9849566935116243,
+        "std": 0.005794157716133597
+      }
+    }
+  }
+}

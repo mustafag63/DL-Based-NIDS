@@ -89,10 +89,19 @@ NUMERIC_COLS = [
     "duration", "orig_bytes", "resp_bytes",
     "orig_pkts", "resp_pkts",
     "bytes_per_sec", "pkts_per_sec", "byte_ratio",
+    "conn_count_60s", "unique_dst_ports_60s", "unique_dst_ips_60s", "failed_conn_ratio_60s",
 ]  # missed_bytes dropped: constant 0 across all 8 windows, zero signal
 # orig_ip_bytes/resp_ip_bytes dropped: r=0.996/0.99996 with orig_bytes/resp_bytes
 # - redundant, ip_bytes ~= bytes + header overhead
 CATEGORICAL_COLS = ["proto", "service", "conn_state"]
+
+# conn_state values counted as "failed" for failed_conn_ratio_60s: anything
+# other than SF (clean completion). Only 4 conn_state values are ever
+# observed in this dataset (SF, REJ, RSTO, S1 - see the one-hot columns
+# below), so "failed" = REJ/RSTO/S1 - rejected, reset, or left half-open
+# without a normal close, exactly the pattern a portscan probe or an
+# aborted/DoS-style connection produces.
+FAILED_CONN_STATES = {"REJ", "RSTO", "S1"}
 
 DNS_COLS = [
     "ts", "uid", "id.orig_h", "id.orig_p", "id.resp_h", "id.resp_p", "proto",
@@ -180,6 +189,46 @@ conn_all.loc[~zero_duration, "pkts_per_sec"] = (
 print(f"bytes_per_sec/pkts_per_sec set to 0 for {int(zero_duration.sum())} zero-duration flows")
 
 conn_all["byte_ratio"] = conn_all["orig_bytes"] / (conn_all["resp_bytes"] + 1)
+
+
+# =====================================================================
+# 1b. Rolling 60s source-IP time-window features (IP-based aggregation,
+#     see context.md TODO): for each flow, looking BACKWARD 60 seconds from
+#     its own ts, over all OTHER flows from the same source IP (id.orig_h)
+#     WITHIN THE SAME window_id ONLY (a window boundary must never leak into
+#     the rolling calculation of the next window - windows are collected
+#     hours apart, so mixing them would produce meaningless jumps).
+# =====================================================================
+def add_rolling_source_ip_features(conn_all: pd.DataFrame) -> pd.DataFrame:
+    df = conn_all.sort_values(["window_id", "id.orig_h", "ts"]).copy()
+    df["_dt"] = pd.to_datetime(df["ts"], unit="s")
+    df["_resp_ip_code"] = pd.factorize(df["id.resp_h"])[0]
+    df["_is_failed_conn"] = df["conn_state"].isin(FAILED_CONN_STATES).astype(float)
+
+    pieces = []
+    for (window_id, src_ip), group in df.groupby(["window_id", "id.orig_h"], sort=False):
+        g = group.set_index("_dt")
+        conn_count = g["ts"].rolling("60s").count()
+        unique_ports = g["id.resp_p"].rolling("60s").apply(lambda x: np.unique(x).size, raw=True)
+        unique_ips = g["_resp_ip_code"].rolling("60s").apply(lambda x: np.unique(x).size, raw=True)
+        failed_ratio = g["_is_failed_conn"].rolling("60s").mean()
+        pieces.append(pd.DataFrame({
+            "conn_count_60s": conn_count.values,
+            "unique_dst_ports_60s": unique_ports.values,
+            "unique_dst_ips_60s": unique_ips.values,
+            "failed_conn_ratio_60s": failed_ratio.values,
+        }, index=group.index))
+
+    rolling_feats = pd.concat(pieces).sort_index()
+    return conn_all.join(rolling_feats)
+
+
+conn_all = add_rolling_source_ip_features(conn_all)
+print("\n=== Rolling 60s source-IP features: benign vs attack (raw, unscaled) ===")
+print(conn_all.groupby("is_attack")[
+    ["conn_count_60s", "unique_dst_ports_60s", "unique_dst_ips_60s", "failed_conn_ratio_60s"]
+].agg(["mean", "median"]))
+
 conn_all["row_index"] = np.arange(len(conn_all))
 
 conn_all["signature_key"] = (
