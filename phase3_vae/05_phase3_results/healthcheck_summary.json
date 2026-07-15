@@ -1,0 +1,149 @@
+{
+  "chosen_latent_dim": 10,
+  "latent_sweep": [
+    {
+      "latent_dim": 6,
+      "val_auc": 0.7215067269085055,
+      "val_recon_loss": 3.0305428504943848,
+      "val_kl_loss": 1.3453140258789062,
+      "epochs_run": 59,
+      "train_time_sec": 6.0
+    },
+    {
+      "latent_dim": 8,
+      "val_auc": 0.7202675232682283,
+      "val_recon_loss": 1.4003915786743164,
+      "val_kl_loss": 1.1105045080184937,
+      "epochs_run": 196,
+      "train_time_sec": 17.7
+    },
+    {
+      "latent_dim": 10,
+      "val_auc": 0.8014177958886168,
+      "val_recon_loss": 5.970677375793457,
+      "val_kl_loss": 0.37366703152656555,
+      "epochs_run": 171,
+      "train_time_sec": 14.8
+    }
+  ],
+  "selection_reasoning": [
+    "smallest candidate latent=6: val_AUC=0.7215 (baseline)",
+    "latent=8: val_AUC=0.7203, +-0.0012 over current pick (6) <= tolerance (0.01) -> not worth the extra capacity, keeping latent=6",
+    "latent=10: val_AUC=0.8014, +0.0799 over current pick (6) > tolerance (0.01) -> switching to latent=10"
+  ],
+  "kl_collapse_check": {
+    "mean_kl_last_epochs": 0.27150540842729454,
+    "z_mean_per_dim_std": [
+      0.026985682547092438,
+      0.027351632714271545,
+      0.535646915435791,
+      0.022375373169779778,
+      0.06428168714046478,
+      0.11053048819303513,
+      0.0711541473865509,
+      0.06903430819511414,
+      0.07025988399982452,
+      0.06361834704875946
+    ],
+    "z_log_var_per_dim_mean": [
+      -0.001163496170192957,
+      -0.001126052113249898,
+      -0.48118627071380615,
+      -0.0030757959466427565,
+      -0.017261454835534096,
+      -0.016409283503890038,
+      -0.010086383670568466,
+      -0.011392022483050823,
+      -0.009000051766633987,
+      -0.01395692490041256
+    ],
+    "collapsed": false
+  },
+  "threshold_pctl95": {
+    "precision": 0.882798833819242,
+    "recall": 0.7955859169732002,
+    "f1": 0.8369264787175235,
+    "accuracy": 0.9103479714329129,
+    "threshold": 0.4619750320911403
+  },
+  "threshold_youden": {
+    "precision": 0.5157266811279827,
+    "recall": 0.999474513925381,
+    "f1": 0.680379180826328,
+    "accuracy": 0.7284607202552803,
+    "threshold": 0.0815497413277626
+  },
+  "test_auc": 0.9242776588438363,
+  "epochs_run": 171,
+  "collapse_fix": {
+    "active_dim_threshold": 0.15,
+    "anneal_epochs": 40,
+    "variant_comparison": [
+      {
+        "variant": "beta=1.0 (baseline)",
+        "val_auc": 0.8014177958886168,
+        "test_auc": 0.9244379556861795,
+        "test_f1_pctl95": 0.8392461197339246,
+        "n_active_dims_train": 1,
+        "n_active_dims_val": 2,
+        "final_recon_loss": 5.970677375793457,
+        "final_kl_loss": 0.37366703152656555,
+        "epochs_run": 171
+      },
+      {
+        "variant": "beta=0.5",
+        "val_auc": 0.722827169008978,
+        "test_auc": 0.8879864312710719,
+        "test_f1_pctl95": 0.8399339933993399,
+        "n_active_dims_train": 6,
+        "n_active_dims_val": 6,
+        "final_recon_loss": 2.5688846111297607,
+        "final_kl_loss": 2.091895341873169,
+        "epochs_run": 83
+      },
+      {
+        "variant": "beta=0.25",
+        "val_auc": 0.8431708347199389,
+        "test_auc": 0.9372481109797833,
+        "test_f1_pctl95": 0.8413001912045889,
+        "n_active_dims_train": 3,
+        "n_active_dims_val": 3,
+        "final_recon_loss": 0.6451775431632996,
+        "final_kl_loss": 2.7419450283050537,
+        "epochs_run": 200
+      },
+      {
+        "variant": "KL-annealing (sigmoid -> 1.0)",
+        "val_auc": 0.7250719536708037,
+        "test_auc": 0.8928919415059187,
+        "test_f1_pctl95": 0.8470718845406605,
+        "n_active_dims_train": 10,
+        "n_active_dims_val": 10,
+        "final_recon_loss": 2.9377756118774414,
+        "final_kl_loss": 2.411055088043213,
+        "epochs_run": 21
+      }
+    ],
+    "selection_reasoning": [
+      "baseline (beta=1.0 (baseline)): test_AUC=0.9244, active_dims=1/10",
+      "beta=0.5: test_AUC=0.8880 (drop=0.0365 > tolerance 0.03 despite active_dims=6/10 > baseline) -> REJECTED, AUC cost too high",
+      "beta=0.25: test_AUC=0.9372 (drop=-0.0128 <= tolerance 0.03), active_dims=3/10 > baseline's 1 -> QUALIFIES",
+      "KL-annealing (sigmoid -> 1.0): test_AUC=0.8929 (drop=0.0315 > tolerance 0.03 despite active_dims=10/10 > baseline) -> REJECTED, AUC cost too high",
+      "\n=> SELECTED variant: 'beta=0.25' (active_dims=3/10, test_AUC=0.9372)"
+    ],
+    "selected_variant": "beta=0.25",
+    "selected_variant_active_dims_train": 3,
+    "selected_variant_per_dim_std_train": [
+      0.012185879051685333,
+      0.011449098587036133,
+      0.4796844720840454,
+      0.008207202889025211,
+      0.008400868624448776,
+      0.9928246736526489,
+      0.016049938276410103,
+      0.004413061309605837,
+      0.8637195229530334,
+      0.0067250048741698265
+    ]
+  }
+}

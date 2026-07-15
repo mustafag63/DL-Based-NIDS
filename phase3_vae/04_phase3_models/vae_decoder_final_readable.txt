@@ -1,0 +1,32 @@
+Model file: vae_decoder_final.keras
+Role: VAE decoder (Phase 3 VAE, final architecture - latent_dim=10, beta=0.25)
+Input size: 10
+Output shape(s): (None, 18)
+(Full parameter/layer breakdown below - 'Trainable params' are the model's own weights, 'Optimizer params' is Adam's extra training-time state, not part of the architecture.)
+
+--- Layer-by-layer architecture ---
+Model: "decoder"
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┓
+┃ Layer (type)                    ┃ Output Shape           ┃       Param # ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━┩
+│ input_layer_11 (InputLayer)     │ (None, 10)             │             0 │
+├─────────────────────────────────┼────────────────────────┼───────────────┤
+│ dense_27 (Dense)                │ (None, 8)              │            88 │
+├─────────────────────────────────┼────────────────────────┼───────────────┤
+│ dense_28 (Dense)                │ (None, 16)             │           144 │
+├─────────────────────────────────┼────────────────────────┼───────────────┤
+│ dense_29 (Dense)                │ (None, 18)             │           306 │
+└─────────────────────────────────┴────────────────────────┴───────────────┘
+ Total params: 538 (2.10 KB)
+ Trainable params: 538 (2.10 KB)
+ Non-trainable params: 0 (0.00 B)
+
+
+--- Layer details (activation, output shape, param count) ---
+  input_layer_11       | type=InputLayer   | units=- | activation=- | output_shape=(None, 10) | params=0
+  dense_27             | type=Dense        | units=8 | activation=relu | output_shape=(None, 8) | params=88
+  dense_28             | type=Dense        | units=16 | activation=relu | output_shape=(None, 16) | params=144
+  dense_29             | type=Dense        | units=18 | activation=linear | output_shape=(None, 18) | params=306
+
+--- VAE-specific notes ---
+Takes a sampled latent vector z (shape=(10,), produced by the encoder + reparameterization trick, NOT z_mean/z_log_var directly) and reconstructs the 18-dim input feature vector (linear output activation - these are scaled/encoded features, not bounded/probabilistic outputs).

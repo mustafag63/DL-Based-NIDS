@@ -364,3 +364,30 @@ IDS-Project/
 This is a **read-only copy** — originals remain untouched in
 `~/Desktop/IDS-Analysis/` (code, splits, models, results) and
 `~/Desktop/ids-dataset-raw-backup/` (raw window captures).
+
+> **Note:** the folder map above predates the `phase3_dense/`/`phase3_vae/`
+> split — `03_phase3_splits/`, `04_phase3_models/`, `05_phase3_results/`, and
+> `phase3_autoencoder.ipynb` now live under `phase3_dense/`. See below for the
+> VAE variant added alongside it.
+
+---
+
+## Phase 3 — VAE variant (`phase3_vae/`)
+
+A second Phase 3 model added alongside the Dense autoencoder above: a
+Variational Autoencoder trained on `window_10_0pct`, a dedicated clean-benign
+capture window, and evaluated against Dense's existing labeled val/test split
+(`phase3_dense/03_phase3_splits/`) as a labeled evaluation set — this is a
+health-check, not an architecture comparison against Dense.
+
+Final architecture: `18 -> Dense(16, relu) -> Dropout(0.1) -> Dense(8, relu) ->
+[z_mean(10), z_log_var(10)]` encoder, symmetric decoder, latent_dim=10,
+beta=0.25 (selected after comparing beta=1.0/0.5/0.25 and sigmoid KL-annealing
+to address partial posterior collapse - beta=0.25 tripled the number of active
+latent dimensions, 1/10 to 3/10, with no AUC cost).
+
+**Health-check result:** test AUC=0.9372, F1=0.8413 (pctl95 threshold).
+
+See `phase3_vae/phase3_vae_autoencoder.ipynb` for the full latent-dimension
+sweep, collapse diagnostics, and loss curves, and `phase3_vae/README.md` for
+a caveat on loading the saved encoder/decoder `.keras` files standalone.
