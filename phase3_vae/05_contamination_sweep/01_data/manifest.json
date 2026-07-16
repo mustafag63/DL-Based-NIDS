@@ -1,0 +1,91 @@
+{
+  "seed": 42,
+  "attack_windows_used": [
+    "window_02_3pct",
+    "window_03_5pct",
+    "window_04_7pct",
+    "window_05_12pct",
+    "window_06_15pct",
+    "window_07_17pct",
+    "window_08_22pct"
+  ],
+  "note_window_09": "window_09 does not exist in the raw capture backup; attack pool built from window_02-08.",
+  "feature_cols": [
+    "duration_scaled",
+    "orig_bytes_scaled",
+    "resp_bytes_scaled",
+    "orig_pkts_scaled",
+    "resp_pkts_scaled",
+    "bytes_per_sec_scaled",
+    "pkts_per_sec_scaled",
+    "byte_ratio_scaled",
+    "proto_tcp",
+    "proto_udp",
+    "service_dns",
+    "service_http",
+    "service_none",
+    "service_ssh",
+    "conn_state_REJ",
+    "conn_state_RSTO",
+    "conn_state_S1",
+    "conn_state_SF"
+  ],
+  "benign_pool_total": 4356,
+  "benign_train_pool_n": 3049,
+  "benign_val_n": 653,
+  "benign_test_n": 654,
+  "attack_flows_total": 3870,
+  "attack_pool_n": 3797,
+  "test_attack_set_n": 73,
+  "flow_id_hashes": {
+    "benign_train_pool": "ae1cdd375991a6e3c89e127dd1b6a78f22cd9c613c704edf55cf4757a55c0306",
+    "benign_val": "79ee7c0a8a78a1acd2e172abca24b30ccc5807b78b8ee91a508755b1dadae6d6",
+    "benign_test": "7060c8133aa16f44d8c26dcf52693f1f642c580f4c5c5f65ba9960c84b8134c4",
+    "attack_pool": "e843dec63cf28ac823e5cd0eff4d06b308285a34aeae2a2c953ba147cab8271e",
+    "test_attack_set": "1124f24999ca08dab9ac7279292ef78b8092223c788cd275dd317f1f29968bfa"
+  },
+  "contamination_levels": [
+    {
+      "target_pct": 0,
+      "actual_pct": 0.0,
+      "n_benign": 3049,
+      "n_attack": 0,
+      "n_total": 3049
+    },
+    {
+      "target_pct": 1,
+      "actual_pct": 1.0064935064935066,
+      "n_benign": 3049,
+      "n_attack": 31,
+      "n_total": 3080
+    },
+    {
+      "target_pct": 2,
+      "actual_pct": 1.992928318868531,
+      "n_benign": 3049,
+      "n_attack": 62,
+      "n_total": 3111
+    },
+    {
+      "target_pct": 4,
+      "actual_pct": 3.9987405541561714,
+      "n_benign": 3049,
+      "n_attack": 127,
+      "n_total": 3176
+    },
+    {
+      "target_pct": 8,
+      "actual_pct": 7.996378998189499,
+      "n_benign": 3049,
+      "n_attack": 265,
+      "n_total": 3314
+    },
+    {
+      "target_pct": 12,
+      "actual_pct": 12.005772005772005,
+      "n_benign": 3049,
+      "n_attack": 416,
+      "n_total": 3465
+    }
+  ]
+}

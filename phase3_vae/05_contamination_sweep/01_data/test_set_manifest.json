@@ -1,0 +1,9 @@
+{
+  "n_total": 727,
+  "n_benign": 654,
+  "n_attack": 73,
+  "contamination_pct_actual": 10.041265474552958,
+  "contamination_pct_target": 10.0,
+  "flow_id_hash_sha256": "7c41eb941f5ce5a52bb27408ab6bc927a35e29cf33e54455526c5d0814a79ccd",
+  "seed": 42
+}

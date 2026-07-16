@@ -1,0 +1,34 @@
+Fixed test set: 727 flows (654 benign, 73 attack)
+  level= 0% seed=0: PR-AUC=0.7129 ROC-AUC=0.8454 F1=0.6351 F2=0.6403 benign_FPR=0.0428 attack_recall=0.6438
+  level= 0% seed=1: PR-AUC=0.7188 ROC-AUC=0.8689 F1=0.6351 F2=0.6403 benign_FPR=0.0428 attack_recall=0.6438
+  level= 0% seed=2: PR-AUC=0.7222 ROC-AUC=0.8621 F1=0.6351 F2=0.6403 benign_FPR=0.0428 attack_recall=0.6438
+  level= 0% seed=3: PR-AUC=0.7137 ROC-AUC=0.8535 F1=0.6309 F2=0.6386 benign_FPR=0.0443 attack_recall=0.6438
+  level= 0% seed=4: PR-AUC=0.7223 ROC-AUC=0.8794 F1=0.6714 F2=0.6546 benign_FPR=0.0306 attack_recall=0.6438
+  level= 1% seed=0: PR-AUC=0.6850 ROC-AUC=0.8333 F1=0.6351 F2=0.6403 benign_FPR=0.0428 attack_recall=0.6438
+  level= 1% seed=1: PR-AUC=0.6934 ROC-AUC=0.7674 F1=0.6351 F2=0.6403 benign_FPR=0.0428 attack_recall=0.6438
+  level= 1% seed=2: PR-AUC=0.7141 ROC-AUC=0.8642 F1=0.6861 F2=0.6601 benign_FPR=0.0260 attack_recall=0.6438
+  level= 1% seed=3: PR-AUC=0.7219 ROC-AUC=0.8442 F1=0.6282 F2=0.6533 benign_FPR=0.0520 attack_recall=0.6712
+  level= 1% seed=4: PR-AUC=0.6927 ROC-AUC=0.7787 F1=0.6620 F2=0.6510 benign_FPR=0.0336 attack_recall=0.6438
+  level= 2% seed=0: PR-AUC=0.7021 ROC-AUC=0.8534 F1=0.6309 F2=0.6386 benign_FPR=0.0443 attack_recall=0.6438
+  level= 2% seed=1: PR-AUC=0.6836 ROC-AUC=0.8305 F1=0.6309 F2=0.6386 benign_FPR=0.0443 attack_recall=0.6438
+  level= 2% seed=2: PR-AUC=0.6969 ROC-AUC=0.8463 F1=0.6351 F2=0.6403 benign_FPR=0.0428 attack_recall=0.6438
+  level= 2% seed=3: PR-AUC=0.6898 ROC-AUC=0.8295 F1=0.6144 F2=0.6317 benign_FPR=0.0505 attack_recall=0.6438
+  level= 2% seed=4: PR-AUC=0.6998 ROC-AUC=0.8492 F1=0.6395 F2=0.6421 benign_FPR=0.0413 attack_recall=0.6438
+  level= 4% seed=0: PR-AUC=0.6946 ROC-AUC=0.8286 F1=0.6620 F2=0.6510 benign_FPR=0.0336 attack_recall=0.6438
+  level= 4% seed=1: PR-AUC=0.6601 ROC-AUC=0.7681 F1=0.6144 F2=0.6317 benign_FPR=0.0505 attack_recall=0.6438
+  level= 4% seed=2: PR-AUC=0.6975 ROC-AUC=0.8293 F1=0.6714 F2=0.6546 benign_FPR=0.0306 attack_recall=0.6438
+  level= 4% seed=3: PR-AUC=0.5881 ROC-AUC=0.7561 F1=0.5986 F2=0.6011 benign_FPR=0.0459 attack_recall=0.6027
+  level= 4% seed=4: PR-AUC=0.6567 ROC-AUC=0.8249 F1=0.6429 F2=0.6267 benign_FPR=0.0336 attack_recall=0.6164
+  level= 8% seed=0: PR-AUC=0.6752 ROC-AUC=0.7710 F1=0.6667 F2=0.6528 benign_FPR=0.0321 attack_recall=0.6438
+  level= 8% seed=1: PR-AUC=0.4783 ROC-AUC=0.7174 F1=0.4662 F2=0.4403 benign_FPR=0.0443 attack_recall=0.4247
+  level= 8% seed=2: PR-AUC=0.6746 ROC-AUC=0.8001 F1=0.6438 F2=0.6438 benign_FPR=0.0398 attack_recall=0.6438
+  level= 8% seed=3: PR-AUC=0.6789 ROC-AUC=0.7797 F1=0.6573 F2=0.6492 benign_FPR=0.0352 attack_recall=0.6438
+  level= 8% seed=4: PR-AUC=0.6989 ROC-AUC=0.8086 F1=0.6528 F2=0.6474 benign_FPR=0.0367 attack_recall=0.6438
+  level=12% seed=0: PR-AUC=0.6762 ROC-AUC=0.8287 F1=0.6225 F2=0.6351 benign_FPR=0.0474 attack_recall=0.6438
+  level=12% seed=1: PR-AUC=0.6524 ROC-AUC=0.8053 F1=0.6174 F2=0.6250 benign_FPR=0.0459 attack_recall=0.6301
+  level=12% seed=2: PR-AUC=0.6805 ROC-AUC=0.7804 F1=0.6104 F2=0.6300 benign_FPR=0.0520 attack_recall=0.6438
+  level=12% seed=3: PR-AUC=0.7103 ROC-AUC=0.8183 F1=0.6351 F2=0.6403 benign_FPR=0.0428 attack_recall=0.6438
+  level=12% seed=4: PR-AUC=0.6974 ROC-AUC=0.7923 F1=0.6438 F2=0.6438 benign_FPR=0.0398 attack_recall=0.6438
+
+Wrote /Users/mustafa/Desktop/NIDS/IDS-Project/phase3_vae/05_contamination_sweep/05_results/results_per_seed.csv and /Users/mustafa/Desktop/NIDS/IDS-Project/phase3_vae/05_contamination_sweep/05_results/results_summary.csv
+Wrote /Users/mustafa/Desktop/NIDS/IDS-Project/phase3_vae/05_contamination_sweep/05_results/contamination_curve.png

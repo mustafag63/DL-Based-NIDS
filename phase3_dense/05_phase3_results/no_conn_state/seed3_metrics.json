@@ -2,7 +2,7 @@
   "seed": 3,
   "variant": "no_conn_state",
   "n_features": 14,
-  "train_time_sec": 5.04,
+  "train_time_sec": 5.3,
   "epochs_run": 44,
   "final_train_loss": 0.041759274899959564,
   "final_val_loss": 0.04294171556830406,

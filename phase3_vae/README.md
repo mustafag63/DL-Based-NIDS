@@ -12,10 +12,12 @@ Health-check result: test AUC=0.9372, F1=0.8413.
 
 ## ⚠️ `vae_encoder_final.keras` / `vae_decoder_final.keras` do not run standalone
 
-Both files load fine on their own (`tf.keras.models.load_model(path, safe_mode=False)`
-— `safe_mode=False` is required because of the log-var clipping `Lambda` layer) and
-each is a complete, ordinary Keras Functional model. But loading them is **not**
-enough to reproduce the VAE's actual inference behavior:
+Each is a complete, ordinary Keras Functional model, and
+`tf.keras.models.load_model(path, safe_mode=False)` — `safe_mode=False` is required
+because of the log-var clipping `Lambda` layer — loads the graph/weights. But in a
+fresh process this currently raises `NameError: name 'tf' is not defined` when the
+model is called (see the workaround note below), and even once loaded, that is
+**not** enough to reproduce the VAE's actual inference behavior:
 
 - The **reparameterization trick** (`z = z_mean + exp(0.5*z_log_var) * eps`) that
   turns the encoder's two outputs into a latent sample is plain Python code inside
@@ -27,6 +29,13 @@ enough to reproduce the VAE's actual inference behavior:
 To actually run the full encode → sample → decode pipeline (or retrain), you need
 the `VAE2` class definition from `phase3_vae_autoencoder.ipynb` (section 9) — not
 just these two `.keras` files.
+
+**`NameError` on load, workaround:** Keras's `Lambda.from_config` → `func_load`
+rebuilds the log-var-clip closure using its own `python_utils` module's globals,
+which never imports `tensorflow` — so calling the loaded encoder raises `NameError:
+name 'tf' is not defined`. Fix before calling `load_model`:
+`import keras.src.utils.python_utils as u; u.tf = tf`. Discovered and worked around
+in `05_contamination_sweep/evaluate_contamination_sweep.py`.
 
 ## `04_phase3_models/superseded/`
 

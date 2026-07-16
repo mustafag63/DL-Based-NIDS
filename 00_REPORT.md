@@ -391,3 +391,58 @@ latent dimensions, 1/10 to 3/10, with no AUC cost).
 See `phase3_vae/phase3_vae_autoencoder.ipynb` for the full latent-dimension
 sweep, collapse diagnostics, and loss curves, and `phase3_vae/README.md` for
 a caveat on loading the saved encoder/decoder `.keras` files standalone.
+
+---
+
+## Phase 3 — VAE contamination sweep (`phase3_vae/05_contamination_sweep/`) — 2026-07-16
+
+Extension of the VAE health-check above: same final architecture
+(latent=10, beta=0.25) retrained at 0/1/2/4/8/12% train-set contamination
+levels (5 weight-init seeds each, 30 models total), all evaluated on one
+fixed held-out test set (727 flows, 654 benign + 73 attack, ~10.04%
+contamination) — adapting the leakage-free protocol from Nkashama et al.
+(2024), *"Deep Learning for Network Anomaly Detection under Data
+Contamination"*.
+
+Attack pool built from `window_02`–`window_08` (`window_09` was never
+captured in the raw backup — only `window_01`–`08` and `window_10_0pct`
+exist). Benign pool from `window_10_0pct`, 3-way split (train
+pool/threshold-val/test, 70/15/15) so the threshold-calibration and test
+benign flows never touch training. Scaler/encoder reused Dense's existing
+read-only refit pattern (`prepare_window10.py`), never refit on this
+experiment's own data. All flow-level disjointness (benign train/val/test,
+attack pool/test) verified via in-code assertions.
+
+**Result:** PR-AUC drops fairly sharply from 0.718 (0%) to ~0.66-0.67 (4%)
+as contamination rises, consistent with Nkashama's core finding that an
+unsupervised reconstruction-error model starts treating injected attack
+flows as "normal." Confirmed the 8% level's raw per-seed PR-AUCs
+(0.675/0.675/0.679/0.699/**0.478**) contain one genuine outlier
+(`seed=1`) dragging its mean (0.641) and std (0.092, 4-20x every other
+level's) far from the other four seeds' tight band. Diagnosed the
+outlier by checking active latent dimensions (the same collapse
+diagnostic used in the original beta sweep): `seed=1` has 9/10 active
+dims — not collapsed — while `seed=4` at the same level has only 3/10
+active dims yet a normal PR-AUC (0.699), so posterior collapse does not
+explain the failure; it reads as ordinary seed-to-seed training
+variance. `results_summary.csv` now reports median and trimmed mean
+(drop min+max of 5 seeds) alongside mean±std for exactly this reason —
+by either robust statistic, 8% (median 0.675) sits close to 12% (median
+0.680), and the corrected picture from 4% onward is a noisy plateau
+(~0.66-0.685) rather than a monotonic decline or a real 12% reversal.
+Benign FPR stayed roughly stable (~3.8-4.6%) across levels because each
+model's threshold is calibrated against its own held-out validation
+error distribution. Full writeup, per-seed/summary tables, and the
+contamination curve: [`phase3_vae/05_contamination_sweep/README.md`](phase3_vae/05_contamination_sweep/README.md).
+
+Also surfaced (and worked around) a pre-existing Keras issue: reloading
+`encoder.keras`/`decoder.keras` in a fresh process raises `NameError: name
+'tf' is not defined` from the log-var-clipping `Lambda` layer — Keras's
+`Lambda.from_config` → `func_load` reconstructs the closure using its own
+`python_utils` module's globals, which never imports `tensorflow`. This
+reproduces identically on the existing `vae_encoder_final.keras`/
+`vae_decoder_final.keras` (independent of this sweep), so the "does not
+run standalone" caveat in `phase3_vae/README.md` is deeper than documented
+there. Workaround (`evaluate_contamination_sweep.py`): inject `tf` into
+`keras.src.utils.python_utils`'s namespace before calling
+`load_model(..., safe_mode=False)` — no saved file is modified.
