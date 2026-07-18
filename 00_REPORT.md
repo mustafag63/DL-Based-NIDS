@@ -435,14 +435,28 @@ model's threshold is calibrated against its own held-out validation
 error distribution. Full writeup, per-seed/summary tables, and the
 contamination curve: [`phase3_vae/05_contamination_sweep/README.md`](phase3_vae/05_contamination_sweep/README.md).
 
-Also surfaced (and worked around) a pre-existing Keras issue: reloading
-`encoder.keras`/`decoder.keras` in a fresh process raises `NameError: name
+Also surfaced (2026-07-16) a pre-existing Keras issue: reloading
+`encoder.keras`/`decoder.keras` in a fresh process raised `NameError: name
 'tf' is not defined` from the log-var-clipping `Lambda` layer — Keras's
 `Lambda.from_config` → `func_load` reconstructs the closure using its own
 `python_utils` module's globals, which never imports `tensorflow`. This
-reproduces identically on the existing `vae_encoder_final.keras`/
+reproduced identically on the existing `vae_encoder_final.keras`/
 `vae_decoder_final.keras` (independent of this sweep), so the "does not
-run standalone" caveat in `phase3_vae/README.md` is deeper than documented
-there. Workaround (`evaluate_contamination_sweep.py`): inject `tf` into
-`keras.src.utils.python_utils`'s namespace before calling
-`load_model(..., safe_mode=False)` — no saved file is modified.
+run standalone" caveat in `phase3_vae/README.md` was deeper than documented
+there. `evaluate_contamination_sweep.py`'s sweep models still use this
+Lambda-based implementation (frozen, already-completed experiment; not
+retrained) and still need its `keras.src.utils.python_utils` monkeypatch
+workaround to load.
+
+**Fixed (2026-07-18)** for the final architecture: the `Lambda` layer is
+replaced with `ClipLogVar`, a `tf.keras.layers.Layer` subclass registered via
+`tf.keras.utils.register_keras_serializable` (`phase3_vae_autoencoder.ipynb`,
+section 2) — a registered `Layer` has no closure for `func_load` to break, so
+`vae_encoder_final.keras`/`vae_decoder_final.keras` now load with plain
+`keras.models.load_model(path, safe_mode=True)`, no `custom_objects=`, no
+monkeypatching. The final model was retrained from scratch with this fix
+(same data/split/hyperparameters) and reproduced the original numbers exactly
+(test AUC=0.9372, F1=0.8413). Old Lambda-based final files kept for
+traceability at `phase3_vae/04_phase3_models/superseded/
+vae_{encoder,decoder}_final_lambda_bug.keras`. Details:
+[`phase3_vae/README.md`](phase3_vae/README.md#-lambda-layer-deserialization-bug--fixed-2026-07-18).

@@ -22,7 +22,8 @@ Model: "encoder"
 ├─────────────────────┼───────────────────┼────────────┼───────────────────┤
 │ z_mean (Dense)      │ (None, 10)        │         90 │ dense_26[0][0]    │
 ├─────────────────────┼───────────────────┼────────────┼───────────────────┤
-│ lambda_5 (Lambda)   │ (None, 10)        │          0 │ z_log_var[0][0]   │
+│ clip_log_var_5      │ (None, 10)        │          0 │ z_log_var[0][0]   │
+│ (ClipLogVar)        │                   │            │                   │
 └─────────────────────┴───────────────────┴────────────┴───────────────────┘
  Total params: 620 (2.42 KB)
  Trainable params: 620 (2.42 KB)
@@ -36,13 +37,13 @@ Model: "encoder"
   dense_26             | type=Dense        | units=8 | activation=relu | output_shape=(None, 8) | params=136
   z_log_var            | type=Dense        | units=10 | activation=linear | output_shape=(None, 10) | params=90
   z_mean               | type=Dense        | units=10 | activation=linear | output_shape=(None, 10) | params=90
-  lambda_5             | type=Lambda       | units=- | activation=- | output_shape=(None, 10) | params=0
+  clip_log_var_5       | type=ClipLogVar   | units=- | activation=- | output_shape=(None, 10) | params=0
 
 --- VAE-specific notes (not captured in this model's own Keras config) ---
 latent_dim = 10
 beta (KL weight, selected variant from section 9.3) = 0.25
 z_mean layer name: 'z_mean' (Dense, linear activation, no clipping)
-z_log_var layer name: 'z_log_var' -> clipped to [-10, 10] via a Lambda layer (numerical stability - see section 2, prevents exp() overflow) before being used downstream.
+z_log_var layer name: 'z_log_var' -> clipped to [-10, 10] via a registered ClipLogVar layer (numerical stability - see section 2, prevents exp() overflow) before being used downstream.
 Reparameterization trick (applied in VAE2.call(), NOT part of this saved encoder model - the encoder only outputs z_mean/z_log_var):
   eps = tf.random.normal(shape=tf.shape(z_mean))
   z   = z_mean + tf.exp(0.5 * z_log_var) * eps

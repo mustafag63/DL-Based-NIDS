@@ -8,3 +8,6 @@ __pycache__/
 
 # Jupyter checkpoints
 .ipynb_checkpoints
+
+# Phase 3 VAE: raw per-run output, not the approved final model
+phase3_vae/04_phase3_models/latest_run/

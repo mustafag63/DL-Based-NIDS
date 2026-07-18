@@ -7,7 +7,7 @@
       "val_recon_loss": 3.0305428504943848,
       "val_kl_loss": 1.3453140258789062,
       "epochs_run": 59,
-      "train_time_sec": 6.0
+      "train_time_sec": 6.7
     },
     {
       "latent_dim": 8,
@@ -15,7 +15,7 @@
       "val_recon_loss": 1.4003915786743164,
       "val_kl_loss": 1.1105045080184937,
       "epochs_run": 196,
-      "train_time_sec": 17.7
+      "train_time_sec": 19.7
     },
     {
       "latent_dim": 10,
@@ -23,7 +23,7 @@
       "val_recon_loss": 5.970677375793457,
       "val_kl_loss": 0.37366703152656555,
       "epochs_run": 171,
-      "train_time_sec": 14.8
+      "train_time_sec": 17.6
     }
   ],
   "selection_reasoning": [
