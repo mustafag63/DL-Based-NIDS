@@ -1,0 +1,56 @@
+TensorFlow 2.21.0, GPU: []
+train: 4356  val: 6576  (test not loaded yet - Phase A is val-only)
+
+beta=1.0 (baseline) seed=0: val_AUC=0.8014 active_dims=1/10 epochs=171
+beta=1.0 (baseline) seed=1: val_AUC=0.7318 active_dims=1/10 epochs=168
+beta=1.0 (baseline) seed=2: val_AUC=0.7156 active_dims=3/10 epochs=122
+beta=1.0 (baseline) seed=3: val_AUC=0.7080 active_dims=2/10 epochs=97
+beta=1.0 (baseline) seed=4: val_AUC=0.7978 active_dims=0/10 epochs=78
+beta=0.5 seed=0: val_AUC=0.7228 active_dims=6/10 epochs=83
+beta=0.5 seed=1: val_AUC=0.7942 active_dims=10/10 epochs=58
+beta=0.5 seed=2: val_AUC=0.7837 active_dims=2/10 epochs=156
+beta=0.5 seed=3: val_AUC=0.7919 active_dims=2/10 epochs=132
+beta=0.5 seed=4: val_AUC=0.8091 active_dims=1/10 epochs=114
+beta=0.25 seed=0: val_AUC=0.8432 active_dims=3/10 epochs=200
+beta=0.25 seed=1: val_AUC=0.8138 active_dims=9/10 epochs=68
+beta=0.25 seed=2: val_AUC=0.8001 active_dims=2/10 epochs=130
+beta=0.25 seed=3: val_AUC=0.8004 active_dims=2/10 epochs=163
+beta=0.25 seed=4: val_AUC=0.8328 active_dims=1/10 epochs=164
+KL-annealing (sigmoid -> 1.0) seed=0: val_AUC=0.7251 active_dims=10/10 epochs=21
+KL-annealing (sigmoid -> 1.0) seed=1: val_AUC=0.7305 active_dims=10/10 epochs=26
+KL-annealing (sigmoid -> 1.0) seed=2: val_AUC=0.7167 active_dims=10/10 epochs=25
+KL-annealing (sigmoid -> 1.0) seed=3: val_AUC=0.7745 active_dims=10/10 epochs=23
+KL-annealing (sigmoid -> 1.0) seed=4: val_AUC=0.7060 active_dims=9/10 epochs=22
+
+                                n_seeds  ...  active_dims_std
+variant                                 ...                 
+beta=1.0 (baseline)                  5  ...         1.140175
+beta=0.5                             5  ...         3.768289
+beta=0.25                            5  ...         3.209361
+KL-annealing (sigmoid -> 1.0)        5  ...         0.447214
+
+[4 rows x 6 columns] 
+
+Selection criterion: val_auc mean across 5 seeds ONLY (active-dim count dropped per 07_seed_variance/ finding - no relationship to AUC).
+Ranking (val_auc mean +/- std, n=5 seeds each):
+  beta=0.25: 0.8181 +/- 0.0194
+  beta=0.5: 0.7803 +/- 0.0334
+  beta=1.0 (baseline): 0.7509 +/- 0.0453
+  KL-annealing (sigmoid -> 1.0): 0.7305 +/- 0.0263
+
+Winner: 'beta=0.25' (0.8181 +/- 0.0194)
+Runner-up: 'beta=0.5' (0.7803 +/- 0.0334)
+Mean-+-std bands overlap: True. Welch t-test p-value: 0.0689
+=> 'beta=0.25' and 'beta=0.5' are NOT statistically distinguishable at n=5 seeds (overlapping std bands / p=0.0689 > 0.05).
+[Phase B] beta=0.25 seed=0: test_AUC=0.9384 test_F1=0.8378
+[Phase B] beta=0.25 seed=1: test_AUC=0.9261 test_F1=0.8493
+[Phase B] beta=0.25 seed=2: test_AUC=0.9160 test_F1=0.8625
+[Phase B] beta=0.25 seed=3: test_AUC=0.9175 test_F1=0.8485
+[Phase B] beta=0.25 seed=4: test_AUC=0.9318 test_F1=0.8390
+
+[Phase B] beta=0.25: test_AUC = 0.9259 +/- 0.0095 (n=5)
+[Phase B] beta=0.25: test_F1  = 0.8474 +/- 0.0099 (n=5)
+
+Reference (07_seed_variance/, beta=0.25, n=10): test_AUC = 0.9197 +/- 0.0149
+
+Saved -> /Users/mustafa/Desktop/NIDS/IDS-Project/phase3_vae/08_beta_multiseed/multiseed_selection_results.json

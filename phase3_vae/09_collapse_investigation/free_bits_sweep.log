@@ -1,0 +1,39 @@
+TensorFlow 2.21.0, GPU: []
+train: 4356  val: 6576  latent=10 beta=0.25 (test not loaded - val-only)
+
+lambda=0.00 seed=0: val_AUC=0.8432 active=3/10 epochs=200
+lambda=0.00 seed=1: val_AUC=0.8138 active=9/10 epochs=68
+lambda=0.00 seed=2: val_AUC=0.8001 active=2/10 epochs=130
+lambda=0.00 seed=3: val_AUC=0.8004 active=2/10 epochs=163
+lambda=0.00 seed=4: val_AUC=0.8328 active=1/10 epochs=164
+lambda=0.10 seed=0: val_AUC=0.7950 active=10/10 epochs=54
+lambda=0.10 seed=1: val_AUC=0.8308 active=10/10 epochs=71
+lambda=0.10 seed=2: val_AUC=0.8604 active=10/10 epochs=173
+lambda=0.10 seed=3: val_AUC=0.8066 active=10/10 epochs=131
+lambda=0.10 seed=4: val_AUC=0.8308 active=10/10 epochs=148
+lambda=0.25 seed=0: val_AUC=0.7134 active=10/10 epochs=34
+lambda=0.25 seed=1: val_AUC=0.8027 active=10/10 epochs=44
+lambda=0.25 seed=2: val_AUC=0.8433 active=10/10 epochs=113
+lambda=0.25 seed=3: val_AUC=0.8121 active=10/10 epochs=136
+lambda=0.25 seed=4: val_AUC=0.8205 active=10/10 epochs=148
+lambda=0.50 seed=0: val_AUC=0.7970 active=10/10 epochs=145
+lambda=0.50 seed=1: val_AUC=0.8253 active=10/10 epochs=64
+lambda=0.50 seed=2: val_AUC=0.8101 active=10/10 epochs=106
+lambda=0.50 seed=3: val_AUC=0.8237 active=10/10 epochs=91
+lambda=0.50 seed=4: val_AUC=0.8068 active=10/10 epochs=162
+lambda=1.00 seed=0: val_AUC=0.8460 active=10/10 epochs=124
+lambda=1.00 seed=1: val_AUC=0.8008 active=10/10 epochs=91
+lambda=1.00 seed=2: val_AUC=0.8305 active=10/10 epochs=119
+lambda=1.00 seed=3: val_AUC=0.8277 active=10/10 epochs=58
+lambda=1.00 seed=4: val_AUC=0.8174 active=10/10 epochs=96
+
+  free_bits_lambda  n_seeds  val_auc_mean  val_auc_std  active_dims_mean  active_dims_std  active_ratio_mean  meets_reference_floor
+             0.00        5      0.818074     0.019359               3.4         3.209361               0.34                   True
+             0.10        5      0.824734     0.025289              10.0         0.000000               1.00                   True
+             0.25        5      0.798361     0.049840              10.0         0.000000               1.00                  False
+             0.50        5      0.812583     0.011913              10.0         0.000000               1.00                   True
+             1.00        5      0.824483     0.016733              10.0         0.000000               1.00                   True 
+
+Reference (08_beta_multiseed, beta=0.25, no free bits): val_AUC = 0.8181 +/- 0.0194 (floor=0.7987)
+
+Saved: /Users/mustafa/Desktop/NIDS/IDS-Project/phase3_vae/09_collapse_investigation/03_free_bits_results.csv, /Users/mustafa/Desktop/NIDS/IDS-Project/phase3_vae/09_collapse_investigation/03_free_bits_summary.csv

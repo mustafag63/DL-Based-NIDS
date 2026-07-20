@@ -1,0 +1,54 @@
+{
+  "chosen_latent_dim": 10,
+  "variant_comparison_val_only": [
+    {
+      "variant": "beta=1.0 (baseline)",
+      "val_auc": 0.8014177958886168,
+      "n_active_dims_train": 1,
+      "n_active_dims_val": 2,
+      "final_recon_loss": 5.970677375793457,
+      "final_kl_loss": 0.37366703152656555,
+      "epochs_run": 171
+    },
+    {
+      "variant": "beta=0.5",
+      "val_auc": 0.722827169008978,
+      "n_active_dims_train": 6,
+      "n_active_dims_val": 6,
+      "final_recon_loss": 2.5688846111297607,
+      "final_kl_loss": 2.091895341873169,
+      "epochs_run": 83
+    },
+    {
+      "variant": "beta=0.25",
+      "val_auc": 0.8431708347199389,
+      "n_active_dims_train": 3,
+      "n_active_dims_val": 3,
+      "final_recon_loss": 0.6451775431632996,
+      "final_kl_loss": 2.7419450283050537,
+      "epochs_run": 200
+    },
+    {
+      "variant": "KL-annealing (sigmoid -> 1.0)",
+      "val_auc": 0.7250719536708037,
+      "n_active_dims_train": 10,
+      "n_active_dims_val": 10,
+      "final_recon_loss": 2.9377756118774414,
+      "final_kl_loss": 2.411055088043213,
+      "epochs_run": 21
+    }
+  ],
+  "selection_reasoning": [
+    "baseline (beta=1.0 (baseline)): val_AUC=0.8014, active_dims=1/10",
+    "beta=0.5: val_AUC=0.7228 (drop=0.0786 > tolerance 0.03 despite active_dims=6/10 > baseline) -> REJECTED, AUC cost too high",
+    "beta=0.25: val_AUC=0.8432 (drop=-0.0418 <= tolerance 0.03), active_dims=3/10 > baseline's 1 -> QUALIFIES",
+    "KL-annealing (sigmoid -> 1.0): val_AUC=0.7251 (drop=0.0763 > tolerance 0.03 despite active_dims=10/10 > baseline) -> REJECTED, AUC cost too high",
+    "\n=> SELECTED variant: 'beta=0.25' (active_dims=3/10, val_AUC=0.8432)"
+  ],
+  "selected_variant": "beta=0.25",
+  "threshold_pctl95_from_val": 0.08712418675422645,
+  "final_test_auc": 0.9372481109797833,
+  "final_test_f1_pctl95": 0.8413001912045889,
+  "old_leaked_test_auc": 0.9372,
+  "old_leaked_test_f1": 0.8413
+}

@@ -10,6 +10,23 @@ latent_dim=10, beta=0.25 (selected over beta=1.0/0.5 and KL-annealing to address
 partial posterior collapse — see notebook section 9.3 for the reasoning).
 Health-check result: test AUC=0.9372, F1=0.8413.
 
+## ⚠️ Beta-selection test-leakage — audited and fixed (2026-07-20)
+
+Section 9's beta-variant comparison originally selected its winner using
+**test-set AUC** instead of val AUC, and evaluated the test set **once per
+variant** (4 times) instead of once total after selection — both test-set
+leakage. Root cause and full audit trail: [`06_beta_selection_audit/README.md`](06_beta_selection_audit/README.md).
+
+**Fix applied directly to the notebook** (sections 9.1/9.3, plus a new 9.3b):
+the variant-comparison loop (9.1) now records `val_auc` only, selection (9.3)
+compares `val_auc` + active-dim count (same ≤0.03 tolerance rule), and the
+test set is read exactly once, in the new section 9.3b, after the winning
+variant is already fixed. Re-running the fixed notebook end-to-end reproduced
+the exact same numbers — **test AUC=0.9372, F1=0.8413, unchanged** — because
+beta=0.25 was already the clear winner on val AUC alone (0.8432 vs. baseline's
+0.8014, well outside the tolerance). The leak didn't change the outcome this
+time, but the selection logic itself was wrong and is now correct.
+
 ## ✅ Lambda-layer deserialization bug — fixed (2026-07-18)
 
 `vae_encoder_final.keras` previously used a `Lambda` layer to clip
@@ -67,15 +84,16 @@ need the `VAE2` class from `phase3_vae/model_layers.py` — not just the two
 
 ## `04_phase3_models/latest_run/`
 
-Section 8 of the notebook (the health-check/latent-sweep model, *not* the
-final architecture) saves here, never straight into `04_phase3_models/` —
-this is only the raw output of the most recent notebook run, not an
-official/approved final model; the final model is always
-`04_phase3_models/vae_encoder_final.keras` / `vae_decoder_final.keras`. Any
-file already in `latest_run/` from a previous run is archived in place with a
-timestamp suffix before a new one is saved, so re-running the notebook can
-never silently overwrite or collide with either an earlier run or the
-approved final files.
+Section 8 (the health-check/latent-sweep model) and, as of the leakage fix
+above, section 9.4 (the beta-selected final architecture) both save here,
+never straight into `04_phase3_models/` root — this is only the raw output of
+the most recent notebook run, not an official/approved final model; the
+approved final model is always `04_phase3_models/vae_encoder_final.keras` /
+`vae_decoder_final.keras` at the root, promoted out of `latest_run/` manually
+after review. Any file already in `latest_run/` from a previous run is
+archived in place with a timestamp suffix before a new one is saved, so
+re-running the notebook can never silently overwrite or collide with either
+an earlier run or the approved final files.
 
 ## `04_phase3_models/superseded/`
 

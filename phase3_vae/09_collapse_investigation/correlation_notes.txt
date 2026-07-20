@@ -1,0 +1,13 @@
+High-correlation (|r|>0.8) feature pairs (redundancy candidates):
+|corr|>0.8: proto_tcp vs proto_udp = -0.996
+|corr|>0.8: proto_tcp vs service_dns = -0.996
+|corr|>0.8: proto_udp vs service_dns = 1.000
+|corr|>0.8: service_http vs service_none = -0.892
+|corr|>0.8 (numeric): duration_scaled vs orig_bytes_scaled = 0.858
+|corr|>0.8 (numeric): duration_scaled vs orig_pkts_scaled = 0.841
+|corr|>0.8 (numeric): orig_bytes_scaled vs orig_pkts_scaled = 0.974
+|corr|>0.8 (numeric): resp_bytes_scaled vs resp_pkts_scaled = 0.983
+|corr|>0.8 (numeric): orig_pkts_scaled vs resp_pkts_scaled = 0.888
+|corr|>0.8 (numeric): bytes_per_sec_scaled vs pkts_per_sec_scaled = 0.983
+
+PCA components needed: 90%=3, 95%=4, 99%=6 (of 18 total)

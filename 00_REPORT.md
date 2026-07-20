@@ -392,6 +392,16 @@ See `phase3_vae/phase3_vae_autoencoder.ipynb` for the full latent-dimension
 sweep, collapse diagnostics, and loss curves, and `phase3_vae/README.md` for
 a caveat on loading the saved encoder/decoder `.keras` files standalone.
 
+**Test-leakage audit (2026-07-20):** the beta-variant comparison (1.0/0.5/
+0.25/KL-annealing) was found to select its winner using test-set AUC instead
+of val AUC, and to evaluate the test set once per variant instead of once
+total — both test-set leakage. Notebook section 9 (`phase3_vae_autoencoder.ipynb`)
+was rewritten to select on val AUC + active-dim count only, with the test set
+touched exactly once, after the winner is fixed. Re-running end-to-end
+reproduced the exact same numbers (test AUC=0.9372, F1=0.8413) — beta=0.25 was
+already the clear winner on val AUC alone, so the original pick was correct
+despite the leaky methodology. Details: [`phase3_vae/06_beta_selection_audit/README.md`](phase3_vae/06_beta_selection_audit/README.md).
+
 ---
 
 ## Phase 3 — VAE contamination sweep (`phase3_vae/05_contamination_sweep/`) — 2026-07-16

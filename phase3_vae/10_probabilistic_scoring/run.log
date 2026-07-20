@@ -1,0 +1,31 @@
+TensorFlow 2.21.0, GPU: []
+train: 4356  val: 6576  latent=10 beta=0.25 (test not loaded - Phase A is val-only)
+
+seed=0: val_AUC baseline=0.8432 elbo=0.7707 recon_prob=0.8502 (score time sec: 0.010 / 0.007 / 0.032, MC L=10) epochs=200
+seed=1: val_AUC baseline=0.8138 elbo=0.7478 recon_prob=0.8169 (score time sec: 0.008 / 0.006 / 0.033, MC L=10) epochs=68
+seed=2: val_AUC baseline=0.8001 elbo=0.7073 recon_prob=0.8330 (score time sec: 0.009 / 0.006 / 0.036, MC L=10) epochs=130
+seed=3: val_AUC baseline=0.8004 elbo=0.7243 recon_prob=0.7957 (score time sec: 0.008 / 0.006 / 0.030, MC L=10) epochs=163
+seed=4: val_AUC baseline=0.8328 elbo=0.8043 recon_prob=0.8362 (score time sec: 0.008 / 0.005 / 0.030, MC L=10) epochs=164
+
+             n_seeds  val_auc_mean  val_auc_std  mean_score_time_sec
+score                                                              
+baseline          5      0.818074     0.019359              0.00844
+elbo              5      0.750878     0.038272              0.00596
+recon_prob        5      0.826391     0.020836              0.03234 
+
+Winner: 'recon_prob' (0.8264 +/- 0.0208)
+Runner-up: 'baseline' (0.8181 +/- 0.0194)
+Overlap: True, Welch t-test p-value: 0.5316
+[Phase B] recon_prob seed=0: test_AUC=0.9416 test_F1=0.8494
+[Phase B] recon_prob seed=1: test_AUC=0.9283 test_F1=0.8563
+[Phase B] recon_prob seed=2: test_AUC=0.9347 test_F1=0.8657
+[Phase B] recon_prob seed=3: test_AUC=0.9151 test_F1=0.8559
+[Phase B] recon_prob seed=4: test_AUC=0.9362 test_F1=0.8345
+
+[Phase B] recon_prob: test_AUC = 0.9312 +/- 0.0102 (n=5)
+[Phase B] recon_prob: test_F1  = 0.8524 +/- 0.0116 (n=5)
+
+Reference (07_seed_variance, baseline score, n=10): test_AUC = 0.9197 +/- 0.0149
+Reference (08_beta_multiseed, baseline score, n=5): test_AUC = 0.9259 +/- 0.0095
+
+Saved: /Users/mustafa/Desktop/NIDS/IDS-Project/phase3_vae/10_probabilistic_scoring/val_score_comparison_per_seed.csv, /Users/mustafa/Desktop/NIDS/IDS-Project/phase3_vae/10_probabilistic_scoring/val_score_comparison_summary.csv, /Users/mustafa/Desktop/NIDS/IDS-Project/phase3_vae/10_probabilistic_scoring/winner_test_per_seed.csv

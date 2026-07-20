@@ -1,0 +1,37 @@
+TensorFlow 2.21.0, GPU: []
+train: 4356  val: 6576  beta=0.25 (test not loaded - val-only)
+
+latent= 4 seed=0: val_AUC=0.7998 active=4/4 (ratio=1.00) epochs=120
+latent= 4 seed=1: val_AUC=0.8474 active=2/4 (ratio=0.50) epochs=102
+latent= 4 seed=2: val_AUC=0.8405 active=3/4 (ratio=0.75) epochs=155
+latent= 4 seed=3: val_AUC=0.7655 active=3/4 (ratio=0.75) epochs=89
+latent= 4 seed=4: val_AUC=0.8315 active=2/4 (ratio=0.50) epochs=132
+latent= 6 seed=0: val_AUC=0.7872 active=5/6 (ratio=0.83) epochs=77
+latent= 6 seed=1: val_AUC=0.8455 active=2/6 (ratio=0.33) epochs=175
+latent= 6 seed=2: val_AUC=0.8247 active=2/6 (ratio=0.33) epochs=160
+latent= 6 seed=3: val_AUC=0.8133 active=2/6 (ratio=0.33) epochs=97
+latent= 6 seed=4: val_AUC=0.8114 active=2/6 (ratio=0.33) epochs=178
+latent= 8 seed=0: val_AUC=0.8116 active=6/8 (ratio=0.75) epochs=161
+latent= 8 seed=1: val_AUC=0.8112 active=2/8 (ratio=0.25) epochs=151
+latent= 8 seed=2: val_AUC=0.8207 active=3/8 (ratio=0.38) epochs=181
+latent= 8 seed=3: val_AUC=0.8127 active=3/8 (ratio=0.38) epochs=137
+latent= 8 seed=4: val_AUC=0.7941 active=2/8 (ratio=0.25) epochs=131
+latent=10 seed=0: val_AUC=0.8432 active=3/10 (ratio=0.30) epochs=200
+latent=10 seed=1: val_AUC=0.8138 active=9/10 (ratio=0.90) epochs=68
+latent=10 seed=2: val_AUC=0.8001 active=2/10 (ratio=0.20) epochs=130
+latent=10 seed=3: val_AUC=0.8004 active=2/10 (ratio=0.20) epochs=163
+latent=10 seed=4: val_AUC=0.8328 active=1/10 (ratio=0.10) epochs=164
+latent=16 seed=0: val_AUC=0.7028 active=13/16 (ratio=0.81) epochs=34
+latent=16 seed=1: val_AUC=0.7866 active=13/16 (ratio=0.81) epochs=43
+latent=16 seed=2: val_AUC=0.8154 active=4/16 (ratio=0.25) epochs=130
+latent=16 seed=3: val_AUC=0.8052 active=11/16 (ratio=0.69) epochs=197
+latent=16 seed=4: val_AUC=0.7932 active=8/16 (ratio=0.50) epochs=167
+
+  latent_dim  n_seeds  val_auc_mean  val_auc_std  active_dims_mean  active_dims_std  active_ratio_mean  active_ratio_std
+          4        5      0.816934     0.034044               2.8         0.836660           0.700000          0.209165
+          6        5      0.816427     0.021244               2.6         1.341641           0.433333          0.223607
+          8        5      0.810072     0.009732               3.2         1.643168           0.400000          0.205396
+         10        5      0.818074     0.019359               3.4         3.209361           0.340000          0.320936
+         16        5      0.780627     0.044895               9.8         3.834058           0.612500          0.239629 
+
+Saved: /Users/mustafa/Desktop/NIDS/IDS-Project/phase3_vae/09_collapse_investigation/02_latent_sweep_results.csv, /Users/mustafa/Desktop/NIDS/IDS-Project/phase3_vae/09_collapse_investigation/02_latent_sweep_summary.csv

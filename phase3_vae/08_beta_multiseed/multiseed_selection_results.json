@@ -1,0 +1,77 @@
+{
+  "seeds_used": [
+    0,
+    1,
+    2,
+    3,
+    4
+  ],
+  "phase_a_variant_summary": [
+    {
+      "variant": "beta=1.0 (baseline)",
+      "n_seeds": 5,
+      "val_auc_mean": 0.7509332716222532,
+      "val_auc_std": 0.045280778626963884,
+      "val_auc_median": 0.7318377441276396,
+      "active_dims_mean": 1.4,
+      "active_dims_std": 1.140175425099138
+    },
+    {
+      "variant": "beta=0.5",
+      "n_seeds": 5,
+      "val_auc_mean": 0.7803453445288352,
+      "val_auc_std": 0.03344005182547516,
+      "val_auc_median": 0.7919123996804289,
+      "active_dims_mean": 4.2,
+      "active_dims_std": 3.768288736283355
+    },
+    {
+      "variant": "beta=0.25",
+      "n_seeds": 5,
+      "val_auc_mean": 0.8180736105382994,
+      "val_auc_std": 0.019359033493482527,
+      "val_auc_median": 0.81380144923236,
+      "active_dims_mean": 3.4,
+      "active_dims_std": 3.209361307176242
+    },
+    {
+      "variant": "KL-annealing (sigmoid -> 1.0)",
+      "n_seeds": 5,
+      "val_auc_mean": 0.7305389876772341,
+      "val_auc_std": 0.02625149332263603,
+      "val_auc_median": 0.7250719536708037,
+      "active_dims_mean": 9.8,
+      "active_dims_std": 0.4472135954999579
+    }
+  ],
+  "selection_reasoning": [
+    "Selection criterion: val_auc mean across 5 seeds ONLY (active-dim count dropped per 07_seed_variance/ finding - no relationship to AUC).",
+    "Ranking (val_auc mean +/- std, n=5 seeds each):",
+    "  beta=0.25: 0.8181 +/- 0.0194",
+    "  beta=0.5: 0.7803 +/- 0.0334",
+    "  beta=1.0 (baseline): 0.7509 +/- 0.0453",
+    "  KL-annealing (sigmoid -> 1.0): 0.7305 +/- 0.0263",
+    "\nWinner: 'beta=0.25' (0.8181 +/- 0.0194)",
+    "Runner-up: 'beta=0.5' (0.7803 +/- 0.0334)",
+    "Mean-+-std bands overlap: True. Welch t-test p-value: 0.0689",
+    "=> 'beta=0.25' and 'beta=0.5' are NOT statistically distinguishable at n=5 seeds (overlapping std bands / p=0.0689 > 0.05)."
+  ],
+  "winner_variant": "beta=0.25",
+  "runner_up_variant": "beta=0.5",
+  "welch_ttest_p_value": 0.06885072918452655,
+  "distinguishable_from_runner_up": false,
+  "phase_b_winner_test_summary": {
+    "winner_variant": "beta=0.25",
+    "n_seeds": 5,
+    "test_auc_mean": 0.92593780392652,
+    "test_auc_std": 0.00948230645956217,
+    "test_f1_mean": 0.8474079314954439,
+    "test_f1_std": 0.009925046795659488
+  },
+  "reference_07_seed_variance_beta025_10seed": {
+    "variant": "beta=0.25",
+    "n_seeds": 10,
+    "test_auc_mean": 0.9197,
+    "test_auc_std": 0.0149
+  }
+}
