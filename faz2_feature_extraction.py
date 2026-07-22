@@ -73,6 +73,7 @@ SPLIT_DIR.mkdir(exist_ok=True)
 WINDOWS = [
     "window_01_0pct", "window_02_3pct", "window_03_5pct", "window_04_7pct",
     "window_05_12pct", "window_06_15pct", "window_07_17pct", "window_08_22pct",
+    "window_resampled_15pct", "window_resampled_20pct",
 ]
 
 ATTACKER_IP = "192.168.10.2"
@@ -139,19 +140,36 @@ for w in WINDOWS:
     conn_lab["actual_attack_pct"] = meta["actual_attack_pct"]
     all_conn_frames.append(conn_lab)
 
-    dns = pd.read_csv(win_dir / "zeek" / "dns.log", sep="\t", comment="#", names=DNS_COLS, na_values="-")
-    n_dns_raw = len(dns)
-    n_dns_lab = int(dns["query"].astype(str).str.contains("techmarket.lab", na=False).sum())
+    dns_path = win_dir / "zeek" / "dns.log"
+    if dns_path.is_file():
+        dns = pd.read_csv(dns_path, sep="\t", comment="#", names=DNS_COLS, na_values="-")
+        n_dns_raw = len(dns)
+        n_dns_lab = int(dns["query"].astype(str).str.contains("techmarket.lab", na=False).sum())
+    else:
+        # resampled windows (build_synthetic_window.py) only carry conn.log -
+        # same "not applicable" treatment as attack_log.csv below.
+        n_dns_raw = None
+        n_dns_lab = None
 
-    attack_log = pd.read_csv(win_dir / "ground_truth" / "attack_log.csv", encoding="utf-8-sig")
-    attack_log["start_iso"] = pd.to_datetime(attack_log["start_iso"], utc=True)
-    win_start = pd.to_datetime(meta["start_iso"], utc=True)
-    win_end = pd.to_datetime(meta["end_iso"], utc=True)
-    n_attacklog_raw = len(attack_log)
-    n_attacklog_win = int(((attack_log["start_iso"] >= win_start) & (attack_log["start_iso"] <= win_end)).sum())
+    attack_log_path = win_dir / "ground_truth" / "attack_log.csv"
+    if attack_log_path.is_file():
+        attack_log = pd.read_csv(attack_log_path, encoding="utf-8-sig")
+        attack_log["start_iso"] = pd.to_datetime(attack_log["start_iso"], utc=True)
+        win_start = pd.to_datetime(meta["start_iso"], utc=True)
+        win_end = pd.to_datetime(meta["end_iso"], utc=True)
+        n_attacklog_raw = len(attack_log)
+        n_attacklog_win = int(((attack_log["start_iso"] >= win_start) & (attack_log["start_iso"] <= win_end)).sum())
+        attacklog_note = ""
+    else:
+        # resampled windows (build_synthetic_window.py) have no attack_log.csv -
+        # they're built from other windows' already-validated real flows, so
+        # there's no live attack tool run to cross-check against here.
+        n_attacklog_raw = None
+        n_attacklog_win = None
+        attacklog_note = " ground_truth: not_applicable (resampled window)"
 
     report_lines.append(
-        f"| {w} | {n_raw} | {n_lab} | {n_attack} | {n_benign} | {n_dns_raw} | {n_dns_lab} | {n_attacklog_raw} | {n_attacklog_win} |"
+        f"| {w} | {n_raw} | {n_lab} | {n_attack} | {n_benign} | {n_dns_raw} | {n_dns_lab} | {n_attacklog_raw} | {n_attacklog_win} |{attacklog_note}"
     )
     print(f"{w}: conn_raw={n_raw} conn_lab={n_lab} attack={n_attack} benign={n_benign} "
           f"actual_attack_pct={meta['actual_attack_pct']:.4f} flow_attack_ratio={100*n_attack/n_lab:.4f}%")
@@ -282,18 +300,75 @@ print(f"\nOfficial seed selected (most balanced per-window distribution, min bal
 splits = seed_splits[OFFICIAL_SEED]
 train_df, val_df, test_df, shift_df = splits["train"], splits["val"], splits["test"], splits["window01_shift_test"]
 
-# =====================================================================
-# 4. Per-window representation check
-# =====================================================================
-print("\n" + "=" * 70)
-print(f"WINDOW x SPLIT BREAKDOWN (seed={OFFICIAL_SEED})")
-print("=" * 70)
 conn_all["split"] = "UNASSIGNED"
 conn_all.loc[train_df.index, "split"] = "train"
 conn_all.loc[val_df.index, "split"] = "val"
 conn_all.loc[test_df.index, "split"] = "test"
 conn_all.loc[shift_df.index, "split"] = "window01_shift_test"
 assert (conn_all["split"] != "UNASSIGNED").all(), "Found unassigned rows!"
+
+# =====================================================================
+# 3.5 Post-hoc split-aware correction for resampled windows (leakage fix).
+# build_synthetic_window.py copies real rows byte-for-byte (uid included,
+# since with_replacement=false meant no row needed a "_dupN" rewrite) from
+# the 8 source windows into window_resampled_15pct/20pct. split_once() (via
+# signature_id, which is window_id-qualified) has no idea these are the
+# same underlying flow as a source-window row, so it can - and does - place
+# a resampled copy in "train" while its source-window twin sits in "test"
+# (same real flow content on both sides of the split = leakage). Forcing
+# every resampled row into whatever split its uid-matched source-window
+# twin landed in removes that overlap, without touching split_once()'s
+# general train/val/test logic for the 8 real windows.
+# =====================================================================
+RESAMPLED_WINDOWS = {"window_resampled_15pct", "window_resampled_20pct"}
+SOURCE_WINDOWS = [w for w in WINDOWS if w not in RESAMPLED_WINDOWS]
+
+source_mask = conn_all["window_id"].isin(SOURCE_WINDOWS)
+uid_to_source_split = (
+    conn_all.loc[source_mask]
+    .drop_duplicates(subset="uid", keep="first")
+    .set_index("uid")["split"]
+)
+
+resampled_mask = conn_all["window_id"].isin(RESAMPLED_WINDOWS)
+matched_split = conn_all.loc[resampled_mask, "uid"].map(uid_to_source_split)
+n_resampled = int(resampled_mask.sum())
+n_matched = int(matched_split.notna().sum())
+n_changed = int((matched_split.notna() & (matched_split != conn_all.loc[resampled_mask, "split"])).sum())
+print(f"\nPost-hoc leakage fix: {n_matched}/{n_resampled} resampled rows matched to a source-window "
+      f"uid; {n_changed} had their split OVERRIDDEN to match the source flow's split.")
+if n_matched < n_resampled:
+    print(f"  UYARI: {n_resampled - n_matched} resampled satirin uid'i kaynak window'larda bulunamadi "
+          "(beklenmiyordu - build_synthetic_window.py hep birebir kopyaliyor); bunlar split_once()'in "
+          "orijinal atamasinda birakildi.")
+
+conn_all.loc[resampled_mask, "split"] = matched_split.where(matched_split.notna(),
+                                                              conn_all.loc[resampled_mask, "split"])
+
+# train_df/val_df/test_df/shift_df MUST be rebuilt from the corrected
+# "split" column - everything downstream (scaler fit, split index CSVs)
+# uses these dataframes' .index, not the "split" column directly.
+train_df = conn_all[conn_all["split"] == "train"]
+val_df = conn_all[conn_all["split"] == "val"]
+test_df = conn_all[conn_all["split"] == "test"]
+shift_df = conn_all[conn_all["split"] == "window01_shift_test"]
+
+for w in RESAMPLED_WINDOWS:
+    win_split_counts = conn_all.loc[conn_all["window_id"] == w, "split"].value_counts()
+    win_total = win_split_counts.sum()
+    max_frac = win_split_counts.max() / win_total
+    if max_frac > 0.90:
+        dominant = win_split_counts.idxmax()
+        print(f"  UYARI: {w} leakage-fix sonrasi asiri dengesiz - %{100*max_frac:.1f} '{dominant}' split'inde "
+              f"({win_split_counts.to_dict()}). Bu beklenen bir yan etki: leakage'i onlemek "
+              "feature-parity'den once gelir, window basina esit split dagilimi garanti degildir.")
+
+# =====================================================================
+# 4. Per-window representation check
+# =====================================================================
+print("\n" + "=" * 70)
+print(f"WINDOW x SPLIT BREAKDOWN (seed={OFFICIAL_SEED}, leakage-corrected)")
+print("=" * 70)
 
 window_split_table = conn_all.groupby(["window_id", "split", "is_attack"]).size().unstack(fill_value=0)
 print(window_split_table.reindex(WINDOWS, level=0))
@@ -407,10 +482,11 @@ for name, df, fname in [
     print(f"Saved: {out_path} ({len(df)} rows)")
 
 print("\n" + "=" * 70)
-print("SPLIT SUMMARY REPORT (official seed)")
+print("SPLIT SUMMARY REPORT (official seed, leakage-corrected)")
 print("=" * 70)
 total = len(conn_all)
-for name, df in splits.items():
+corrected_splits = {"train": train_df, "val": val_df, "test": test_df, "window01_shift_test": shift_df}
+for name, df in corrected_splits.items():
     n = len(df)
     n_benign = int((df["is_attack"] == 0).sum())
     n_attack = int((df["is_attack"] == 1).sum())
