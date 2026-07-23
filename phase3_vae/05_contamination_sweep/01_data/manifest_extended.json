@@ -1,0 +1,45 @@
+{
+  "note": "Extension of manifest.json's 0/1/2/4/8/12% sweep with ~15/20/22% levels, all fully without-replacement and mutually disjoint, built directly from window_resampled_15pct / window_resampled_20pct / window_resampled_22pct_clean conn.log (build_synthetic_window.py / build_window_22pct_clean.py output). Train sets for these levels are the resampled window's own benign+attack flows (after uid-based leak filtering against the fixed test set), NOT benign_train_pool + injected attack sample like the original six. The earlier with-replacement window_resampled_{22,25,28,30}pct build is deliberately excluded from this manifest - see exploratory_with_replacement/ and README.md.",
+  "test_set_bare_uid_count": 727,
+  "levels": [
+    {
+      "target_pct": 15,
+      "source_window": "window_resampled_15pct",
+      "n_before_leak_filter": 4899,
+      "n_attack_before_leak_filter": 719,
+      "n_leaked_rows_dropped": 20,
+      "n_leaked_attack_rows_dropped": 20,
+      "n_leaked_benign_rows_dropped": 0,
+      "n_total": 4879,
+      "n_attack": 699,
+      "n_benign": 4180,
+      "actual_pct": 14.326706292273007
+    },
+    {
+      "target_pct": 20,
+      "source_window": "window_resampled_20pct",
+      "n_before_leak_filter": 4891,
+      "n_attack_before_leak_filter": 956,
+      "n_leaked_rows_dropped": 15,
+      "n_leaked_attack_rows_dropped": 15,
+      "n_leaked_benign_rows_dropped": 0,
+      "n_total": 4876,
+      "n_attack": 941,
+      "n_benign": 3935,
+      "actual_pct": 19.298605414273997
+    },
+    {
+      "target_pct": 22,
+      "source_window": "window_resampled_22pct_clean",
+      "n_before_leak_filter": 4884,
+      "n_attack_before_leak_filter": 1054,
+      "n_leaked_rows_dropped": 18,
+      "n_leaked_attack_rows_dropped": 18,
+      "n_leaked_benign_rows_dropped": 0,
+      "n_total": 4866,
+      "n_attack": 1036,
+      "n_benign": 3830,
+      "actual_pct": 21.290587751746816
+    }
+  ]
+}

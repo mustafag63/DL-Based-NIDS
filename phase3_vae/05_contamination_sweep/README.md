@@ -200,3 +200,283 @@ daha güvenilir).
 - 5 seed, özellikle yüksek kontaminasyon seviyelerinde (8-12%) varyansı
   güvenilir ölçmek için az kalabilir — %8'deki tek dengesiz koşu bunun
   somut bir örneği.
+
+## Genişletme: ~%15 ve ~%20 seviyeleri (resampled window'lar)
+
+2026-07-22 16:00-18:00 Pi/Zeek capture kesintisi nedeniyle kaybolan
+pencerelerin yerine `build_synthetic_window.py` ile üretilen
+`window_resampled_15pct` (actual_attack_pct=%14.999, n=4967) ve
+`window_resampled_20pct` (actual_attack_pct=%19.992, n=4967) kullanılarak
+sweep iki yeni kontaminasyon seviyesiyle genişletildi. Orijinal 0/1/2/4/8/12%
+seviyelerine (`01_data/`, `02_contaminated_train_sets/train_contam_{0,1,2,4,8,12}pct.csv`,
+`04_models/contam_{0,1,2,4,8,12}pct/`, `05_results/results_per_seed.csv`'nin
+ilk 30 satırı) **dokunulmadı** — bu 30 satırın deney öncesi/sonrası byte-bit
+aynı kaldığı doğrulandı.
+
+**Protokol farkı (bilinçli):** orijinal 6 seviyede sabit `benign_train_pool`
+(3049, window_10'dan) üstüne `attack_pool`'dan (window_02-08) örneklenen
+attack flow'lar ekleniyordu. Bu iki yeni seviyede ise train set doğrudan
+resampled window'un **kendi** conn.log'undan (benign+attack birlikte, doğal
+~%15/%20 kontaminasyonla) üretildi — `prepare_contamination_data_extended.py`.
+Geri kalan her şey (VAE mimarisi, hyperparametreler, 5 seed, held-out benign
+val split'inden threshold hesaplama, sabit test seti) birebir aynı protokol.
+
+**Kritik leakage kontrolü:** `build_synthetic_window.py`, resampled
+window'ların benign/attack satırlarını `window_01,02,03,04,05,07,08`'den
+havuzluyor — bu, sabit test setinin `test_attack_set`'inin geldiği
+`window_02-08` ile örtüşüyor. Orijinal `flow_id = window_id::uid` tabanlı
+disjointness assert'i bunu **yakalayamazdı**, çünkü resampled window'daki her
+flow'a `load_window()` tarafından atanan `window_id` kaynak pencerenin değil,
+`"window_resampled_15pct"` gibi resampled etiketin kendisi — string eşleşmesi
+hiç oluşmuyor. Gerçek sinyal, satırın Zeek `uid`'inin kendisi (kaynaktan
+bit-bit kopyalandığı için, `_dupN` soneki hariç). `prepare_contamination_data_extended.py`
+bu çıplak uid'i sabit test setinin tüm uid'leriyle karşılaştırdı:
+
+| Seviye | Kaynak window | Leak (satır) | Leak (attack) | Filtre öncesi n | Filtre sonrası n | Filtre sonrası gerçek % |
+|---|---|---|---|---|---|---|
+| ~15% | window_resampled_15pct | 20 | 20 | 4899 | 4879 | 14.327% |
+| ~20% | window_resampled_20pct | 15 | 15 | 4891 | 4876 | 19.299% |
+
+Yani gerçekten de test setiyle çakışan flow'lar vardı (hepsi attack tarafında,
+beklenen gibi — benign satırlar window_10'dan geldiği için hiç çakışmadı);
+bu satırlar sadece train'den çıkarıldı, test seti hiç değiştirilmedi
+(`assert not (bare_uid ∩ test_uids)` her seviye sonrası tekrar doğrulandı).
+
+**Eğitim:** `train_contamination_sweep_extended.py`, aynı `VAE` sınıfı
+(latent=10, beta=0.25, Dense(16)→Dropout(0.1)→Dense(8)→[z_mean,z_log_var](10),
+Adam clipnorm=1.0, EarlyStopping val_loss patience=12), aynı held-out
+`val_benign.csv` — 2×5 = 10 yeni model, `04_models/contam_{15,20}pct/seed_{0-4}/`.
+
+**Değerlendirme:** `evaluate_contamination_sweep_extended.py`, aynı sabit
+test setinde (727 flow, değişmedi), sonuçları `results_per_seed.csv`'ye
+**append** etti (orijinal 30 satır korunarak, 40 satıra çıktı),
+`results_summary.csv` ve `contamination_curve.png` tüm 8 seviye
+(0/1/2/4/8/12/15/20%) üzerinden yeniden hesaplandı.
+
+### Genişletilmiş sonuçlar
+
+5-seed mean, sabit test setinde:
+
+| Contam. | PR-AUC mean | PR-AUC median | PR-AUC trimmed | ROC-AUC mean | F1 mean | Benign FPR mean | Attack Recall mean |
+|---|---|---|---|---|---|---|---|
+| 0% | 0.718 | 0.719 | 0.718 | 0.862 | 0.642 | 0.041 | 0.644 |
+| 1% | 0.701 | 0.693 | 0.700 | 0.818 | 0.649 | 0.039 | 0.649 |
+| 2% | 0.694 | 0.697 | 0.695 | 0.842 | 0.630 | 0.045 | 0.644 |
+| 4% | 0.659 | 0.660 | 0.670 | 0.801 | 0.638 | 0.039 | 0.630 |
+| 8% | 0.641 | 0.675 | 0.676 | 0.775 | 0.617 | 0.038 | 0.600 |
+| 12% | 0.683 | 0.680 | 0.685 | 0.805 | 0.626 | 0.046 | 0.641 |
+| **~15%** | **0.659** | **0.666** | **0.675** | **0.798** | **0.601** | **0.041** | **0.595** |
+| **~20%** | **0.688** | **0.698** | **0.692** | **0.817** | **0.640** | **0.040** | **0.638** |
+
+(15% seed=3 tek başına düşük çıktı — PR-AUC=0.545 vs diğer 4 seed'in
+0.657-0.725 bandı, ~%8'deki tek-seed instabilite deseniyle tutarlı; median/
+trimmed_mean bunu da kısmen düzeltiyor.)
+
+### Yorum: %12 sonrası trend gerçek mi, clean-only hâlâ optimal mi?
+
+- **Clean-only (%0) hâlâ açık ara en iyi**, hem PR-AUC (0.718) hem ROC-AUC
+  (0.862) hem trimmed_mean (0.718) ile tüm diğer 7 kontaminasyon seviyesini
+  geçiyor — %15/%20 eklenmesi bu sonucu değiştirmiyor.
+- **%12'den sonra "toparlanma" var ama bu %0-2 seviyesine dönüş değil**:
+  PR-AUC %8'de 0.641 (median 0.675) → %12'de 0.683 → %15'te 0.659 → %20'de
+  0.688. Yani %12→%15→%20 arası **monoton değil**, ~0.66-0.69 bandında
+  gürültülü bir platoda geziniyor — %4-%20 aralığının tamamı kabaca aynı
+  plato (~0.64-0.69 PR-AUC, ~0.78-0.82 ROC-AUC), %0-2'nin (~0.70-0.72 /
+  ~0.82-0.86) belirgin şekilde altında.
+- **Sonuç: %12 sonrası gözlemlenen artış gerçek bir "daha fazla
+  kontaminasyon daha iyi" trendi değil**, sadece platonun kendi
+  gürültü bandı içinde bir nokta — 5 seed ile bu ince farkları (%8 vs %12
+  vs %15 vs %20 arası sıralama) güvenilir şekilde ayırt etmek mümkün değil.
+  Bu, orijinal 6 seviyelik sweep'in zaten vardığı "%0→%4 keskin düşüş,
+  sonrası plato/gürültü" yorumunu değiştirmeden **doğruluyor ve genişletiyor**
+  — plato artık %4'ten %20'ye kadar uzanıyor.
+- **Metodolojik not**: %15/%20 train setleri artık sabit `benign_train_pool`
+  üstüne enjeksiyon değil, kendi başına farklı bir örneklem (resampled
+  window'un doğal karışımı) — yani bu iki nokta, diğer 6 noktayla birebir
+  aynı "tek değişkenli" kontrolü paylaşmıyor (benign tarafı da farklı flow'lar
+  içeriyor, window_10 dışından). Eğrideki %12→%15/%20 karşılaştırması bu
+  yüzden hâlâ bilgilendirici ama "sadece kontaminasyon oranı değişti, her şey
+  sabit" garantisi sadece 0-12% aralığı için geçerli.
+
+## Exploratory / with-replacement deneme (%22/%25/%28/%30) — ana bulguya DAHİL EDİLMEDİ
+
+Bir önceki genişletme turunda aynı `build_synthetic_window.py` mantığıyla 4
+seviye daha eklenmişti: `window_resampled_{22,25,28,30}pct`, hepsi
+`n_total=4967`, `seed=42`. Attack havuzu toplam 3,279 flow (window_01-08'den,
+window_06 hariç); bu 4 seviyenin toplam ihtiyacı (1093+1242+1391+1490=5,216)
+havuzu aştığı için `build_synthetic_window.py` **attack tarafında
+with-replacement**'a düştü (benign tarafı without-replacement kaldı,
+tekrarlanan satırlar `_dupN` ile işaretlendi). Bu 4 seviye başlangıçta ana
+sweep'e dahil edilip 12 noktalı bir "U şekli" gözlemlenmişti — çukurdan
+(%4-%15, PR-AUC ~0.64-0.66) sonra %19-30 aralığında düzenli bir toparlanma
+(%27'de PR-AUC 0.714, %0'ın 0.718'ine çok yakın).
+
+**Bu sonuç artık ana bulguya dahil değil — with-replacement'ın kendisi
+muhtemel bir konfaunt (artefakt riski) olarak değerlendirildi**: aynı
+attack flow'ların defalarca tekrarlanması (%28-30'da satırların
+%0.5-0.8'i `_dup`), modelin gerçek bir "yüksek kontaminasyona dayanıklılık"
+yerine, tekrarlayan/dar bir attack deseni öğrenmesinin yapay bir yan etkisi
+olabilir. Bunu without-replacement bir kontrol noktasıyla (aşağıdaki
+%22-clean) doğrulamadan ana eğriye karıştırmak yanıltıcı olurdu.
+
+**Bu deneyle ilgili tüm dosyalar `exploratory_with_replacement/` altına
+taşındı** (silinmedi, iz kalsın diye):
+- `exploratory_with_replacement/02_contaminated_train_sets/train_contam_{22,25,28,30}pct.csv`
+- `exploratory_with_replacement/04_models/contam_{22,25,28,30}pct/` (20 model)
+- `exploratory_with_replacement/04_models/training_run_log_with_replacement.json`
+- `exploratory_with_replacement/05_results/results_per_seed_with_replacement.csv` (20 satır)
+
+`05_results/results_per_seed.csv`, `results_summary.csv` ve
+`contamination_curve.png`'den bu 4 seviyenin satırları/noktaları çıkarıldı —
+ana sweep artık bunları hiç içermiyor. `window_resampled_{22,25,28,30}pct`
+ham conn.log'ları (`~/Desktop/NIDS/data/ids-dataset-raw-backup/` altında)
+referans için yerinde bırakıldı, silinmedi.
+
+## Üçüncü genişletme: ~%22 (clean, tam without-replacement)
+
+With-replacement artefakt şüphesini test etmek için, **sadece %22** hedefi
+**tam without-replacement** olarak `build_window_22pct_clean.py` ile yeniden
+üretildi (`window_resampled_22pct_clean`, eski with-replacement
+`window_resampled_22pct`'ten tamamen ayrı bir dosya/etiket).
+
+**Havuz muhasebesi (adım 1, kesin sayılarla doğrulandı):** `window_resampled_15pct`
+ve `window_resampled_20pct`'in without-replacement çekimi toplam
+745 + 993 = **1,738** attack flow kullanmıştı (uid bazlı tam liste
+çıkarıldı, `_dup` yok — ikisi de zaten without-replacement'tı). Bu, 3,279
+flow'luk toplam havuzdan düşülünce **1,541 flow** hiç kullanılmamış temiz
+bütçe olarak kaldı — tahmin edilen sayı script çalıştırılıp doğrulandı.
+%22 hedefi `n_total=4967` ile **1,093** attack flow gerektiriyor, bu
+1,541'e rahatça sığıyor (kalan pay 448).
+
+`build_window_22pct_clean.py`:
+1. Havuzu (window_01,02,03,04,05,07,08) yeniden okur.
+2. `window_resampled_15pct`/`20pct`'in kullandığı **tüm** uid'leri (hem
+   benign hem attack, 9,934 flow) havuzdan çıkarır.
+3. Kalan temiz havuzdan (`attack=1541`, `benign=19930`) without-replacement
+   örnekler (`benign_replacement=False`, `attack_replacement=False` —
+   ikisi de assert ile doğrulandı).
+4. Çekilen uid'lerin 15pct/20pct'in kullandıklarıyla **hiç kesişmediğini**
+   assert ile doğrular ve sonucu `window_meta.json`'a
+   `disjoint_from` alanı olarak yazar; `generation_method` alanına literal
+   `"resampled_without_replacement"` değeri, ayrıntılı açıklama ise
+   `generation_method_description`'a taşındı.
+
+**Leakage kontrolü (sabit test setiyle, uid bazlı):** `window_resampled_22pct_clean`'in
+4884 lab-IP flow'undan (1054 attack) **18 satır** (hepsi attack) sabit test
+setiyle uid çakıştığı için train'den elendi → 4866 flow (1036 attack),
+gerçek kontaminasyon **%21.291**. Test seti yine hiç değiştirilmedi.
+
+**Eğitim/değerlendirme:** `train_contamination_sweep_extended.py` ve
+`evaluate_contamination_sweep_extended.py` artık sadece 15/20/22(clean)
+seviyelerini kapsıyor — aynı VAE mimarisi (latent=10, beta=0.25), aynı 5
+seed, aynı held-out threshold protokolü. Eski with-replacement
+`contam_22pct` model klasörü zaten `exploratory_with_replacement/`'a
+taşınmıştı, bu yüzden %22 sıfırdan, temiz train set'iyle eğitildi (eski
+sonuçların üstüne yazılmadı, tamamen ayrı bir model seti). `results_per_seed.csv`
+şu an 45 satır (orijinal 30 + 15/20/22-clean × 5 seed), orijinal 30 satır
+byte-bit doğrulanarak değişmedi.
+
+### Genişletilmiş sonuçlar (9 temiz nokta) — İLK SÜRÜM, 5 seed her yerde (ARTIK GEÇERSİZ, aşağıya bkz.)
+
+Bu tablo ilk üretildiğinde (aşağıdaki "Seed genişletmesi" bölümünden önce)
+14.33/19.30/21.29% de dahil tüm noktalar 5 seed'liydi ve %21.29'da PR-AUC
+std'si **0.001** gibi çarpıcı derecede dar çıkmıştı — bu, "toparlanma
+gerçek ve kararlı" yorumuna yol açmıştı. **Seed sayısı 20'ye çıkarılınca bu
+dar std'nin bir 5-seed örnekleme tesadüfü olduğu ortaya çıktı** (aşağıdaki
+bölüme bakın) — o yüzden bu ilk tablo ve yorumu burada **sadece izlenebilirlik
+için** tutuluyor, güncel sonuç bir alt bölümde.
+
+## Seed genişletmesi: 14.33/19.30/21.29% için 5→20 seed
+
+`train_contamination_sweep_extended.py` ve `evaluate_..._extended.py`,
+**sadece** bu üç resampled nokta için (`window_resampled_15pct`,
+`window_resampled_20pct`, `window_resampled_22pct_clean`) seed 5-19'u
+(mevcut 0-4'e ek, hiçbiri yeniden eğitilmeden/üzerine yazılmadan) eğitecek
+şekilde genişletildi — orijinal 6 seviye (0/1/2/4/8/12%) ve bu 6 seviyenin
+5-seed sonuçları **hiç dokunulmadı**. `results_summary.csv`'ye artık
+**`n_seeds`** sütunu eklendi: 0/1/2/4/8/12% hâlâ `n_seeds=5`, 15/20/22%
+artık `n_seeds=20` — bu iki grubun std'lerini doğrudan karşılaştırırken
+**bu farkı göz önünde bulundurmak gerekiyor** (20-seed std tahmini daha
+güvenilir/az gürültülü bir tahmin, ama farklı n ile karşılaştırma her
+zaman dikkatli yapılmalı).
+
+### Genişletilmiş sonuçlar (9 nokta, n_seeds karışık — bkz. sütun)
+
+| Contam. | n_seeds | PR-AUC mean | PR-AUC median | PR-AUC trimmed | PR-AUC std | ROC-AUC mean | ROC-AUC std |
+|---|---|---|---|---|---|---|---|
+| 0% | 5 | 0.718 | 0.719 | 0.718 | 0.004 | 0.862 | 0.013 |
+| 1% | 5 | 0.701 | 0.693 | 0.700 | 0.016 | 0.818 | 0.042 |
+| 2% | 5 | 0.694 | 0.697 | 0.695 | 0.008 | 0.842 | 0.011 |
+| 4% | 5 | 0.659 | 0.660 | 0.670 | 0.044 | 0.801 | 0.036 |
+| 8% | 5 | 0.641 | 0.675 | 0.676 | 0.092 | 0.775 | 0.036 |
+| 12% | 5 | 0.683 | 0.680 | 0.685 | 0.022 | 0.805 | 0.019 |
+| **~14.33%** | **20** | **0.640** | **0.666** | **0.667** | **0.092** | **0.796** | **0.045** |
+| **~19.30%** | **20** | **0.662** | **0.686** | **0.680** | **0.071** | **0.817** | **0.026** |
+| **~21.29%** | **20** | **0.665** | **0.710** | **0.701** | **0.086** | **0.819** | **0.032** |
+
+### Yorum: std daraldı mı, genişledi mi? (Kısa cevap: GENİŞLEDİ — beklenenin tersi)
+
+- **Beklentinin tam tersi bir sonuç çıktı: 20 seed'e çıkınca std KÜÇÜLMEDİ,
+  BÜYÜDÜ.** 14.33%: 0.069→**0.092** (%8 ile aynı seviyeye çıktı, sweep'in
+  en gürültülü noktalarından biri oldu). 19.30%: 0.029→**0.071** (2.4x).
+  21.29%: **0.001→0.086** — 86 kat büyüme, sweep'teki en dramatik değişim.
+  Bunun nedeni azalan güven değil, tam tersi: **5 seed, gerçekte var olan
+  değişkenliği yakalamaya yetmiyordu**, 20 seed daha doğru (ve daha kötü
+  görünen) bir tahmin veriyor.
+- **Kök neden: her üç noktada da tutarlı bir "kötü seed" kuyruğu var,
+  20 seed'le görünür hale geldi.** PR-AUC'ları sıraladığımda (ham veri,
+  `results_per_seed.csv`) her seviyede seed'lerin büyük çoğunluğu sıkı bir
+  "iyi" kümede (~0.63-0.72) toplanırken, azınlık bir grup çok daha düşük
+  bir "kötü" kümeye düşüyor (~0.40-0.55):
+  - **14.33%**: 20 seed'in **3'ü** (seed 3, 5, 9) 0.40-0.55 bandında,
+    kalan 17'si 0.60-0.73 bandında.
+  - **19.30%**: 20 seed'in **2'si** (seed 6, 9) 0.45-0.49 bandında,
+    kalan 18'i 0.64-0.72 bandında.
+  - **21.29%**: 20 seed'in **4'ü** (seed 9, 13, 16, 18) 0.45-0.55
+    bandında, kalan 16'sı 0.63-0.72 bandında (bunların çoğu sıkı bir
+    şekilde 0.70-0.72'de).
+  Yani gerçek dağılım yaklaşık **iki kümeli (bimodal)**: seed'lerin
+  ~%80-85'i "iyi" bir çözüme, ~%15-20'si "kötü" bir çözüme yakınsıyor.
+  Bu, orijinal sweep'in %8 noktasında görülen tek-seed instabilitesiyle
+  (seed=1, PR-AUC=0.478, diğer 4 seed 0.68-0.70) aynı fenomenin daha büyük
+  örneklemde daha net görünen hâli — o zaman 5 seed'de 1/5 (%20) kötü
+  çıkmıştı, şimdi 20 seed'de de kabaca aynı oran (%10-20) kötü çıkıyor.
+  **Muhtemel açıklama önceki bölümde zaten vardı** (posterior-collapse-
+  benzeri değil, sıradan eğitim instabilitesi — bazı seed'ler kötü bir
+  yerel optimuma/erken durma noktasına takılıyor) ama bunun her
+  kontaminasyon seviyesinde ~%10-20 oranında **sistematik olarak
+  tekrarlanan** bir oran olması yeni ve önemli bir gözlem.
+- **%22'nin "0.001 std ile inanılmaz kararlı" iddiası GERİ ÇEKİLDİ.** İlk
+  5 seed (0,1,2,3,4) tesadüfen hepsi "iyi" kümeye düşmüştü (0.709-0.713) —
+  bu, %20 kötü-seed oranıyla 5 bağımsız denemenin hepsinin iyi kümeye
+  düşme olasılığı ~0.8^5≈%33, yani "olağanüstü" değil, makul bir tesadüf.
+  Bu, önceki turda "with-replacement artefaktı değil, gerçek ve kararlı
+  bir toparlanma" sonucuna varırken **std'nin ana kanıt olarak kullanılmasının
+  hatalı olduğunu** gösteriyor — küçük n ile düşük std, düşük gerçek
+  varyansın değil, şanslı örneklemenin işareti olabiliyormuş.
+- **Median/trimmed_mean nispeten stabil kaldı** (%22: median 0.712→0.710,
+  trimmed 0.712→0.701) — bunlar zaten kötü-seed kuyruğuna karşı
+  dayanıklı istatistikler, o yüzden 5→20 seed geçişinde beklenen kadar
+  değişmediler. Yani **nokta tahmini** (medyan bazlı "toparlanma var mı"
+  sorusu) hâlâ aynı yönde: %14.33/%19.30/%21.29 medyanları (0.666/0.686/
+  0.710) sırayla artıyor ve çukurdaki 4-12% bandının (medyan 0.660-0.685)
+  üstünde/yakınında — **medyan bazlı toparlanma sinyali hâlâ duruyor**,
+  ama mean bazlı ve varyans bazlı güven çok zayıfladı.
+- **Sonuç: toparlanma sinyali muhtemelen hâlâ gerçek (medyan/trimmed_mean
+  tutarlı) ama "kararlı/gürültüsüz" iddiası yanlıştı.** Doğru resim:
+  bu üç seviyede de model %10-20 ihtimalle kötü bir çözüme takılıyor
+  (tıpkı %8'de olduğu gibi), geri kalan zamanda iyi bir çözüme yakınsıyor
+  ve bu iyi-çözüm PR-AUC'u kontaminasyon arttıkça (14.33→19.30→21.29)
+  kademeli yükseliyor gibi görünüyor. Bu iki ayrı olguyu (a) seed
+  instabilitesinin kendisi ve (b) "iyi seed" performansındaki kontaminasyon-
+  bağımlı trend, aynı ortalama içinde karışıyor — mean tek başına yanıltıcı,
+  medyan/trimmed_mean + ham dağılıma bakmak gerekiyor.
+- **Clean-only (%0) hâlâ tek en iyi nokta** (PR-AUC 0.718, std sadece
+  0.004 — burada da düşük std var ama bu noktada henüz 20 seed'le test
+  edilmedi, dolayısıyla %0'ın da benzer bir kötü-seed kuyruğu taşıyıp
+  taşımadığı bilinmiyor — bu README'nin kapsamı dışında bırakıldı, ileride
+  gerekirse ayrıca sorulmalı).
+- **Sonraki adım için not (kullanıcının belirttiği %16/17/18 ara
+  noktaları)**: bu bulgu göz önüne alınırsa, o noktalar için de en az
+  ~15-20 seed düşünülmeli — 5 seed ile üretilecek bir nokta tahmini,
+  burada görüldüğü gibi std'yi ciddi şekilde olduğundan düşük gösterebilir.

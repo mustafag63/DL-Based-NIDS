@@ -1,0 +1,202 @@
+[
+  {
+    "contamination_pct": 22,
+    "seed": 0,
+    "val_benign_n": 653,
+    "epochs_run": 13,
+    "train_time_sec": 2.114349842071533,
+    "final_val_loss": 18.36341667175293,
+    "threshold_95": 1.3713416576385493,
+    "threshold_99": 4.842588500976564
+  },
+  {
+    "contamination_pct": 22,
+    "seed": 1,
+    "val_benign_n": 653,
+    "epochs_run": 99,
+    "train_time_sec": 8.30824899673462,
+    "final_val_loss": 5.863325595855713,
+    "threshold_95": 0.6463257551193237,
+    "threshold_99": 1.9164360523223896
+  },
+  {
+    "contamination_pct": 22,
+    "seed": 2,
+    "val_benign_n": 653,
+    "epochs_run": 53,
+    "train_time_sec": 4.934280872344971,
+    "final_val_loss": 6.463045120239258,
+    "threshold_95": 0.9287421464920035,
+    "threshold_99": 2.659988880157474
+  },
+  {
+    "contamination_pct": 22,
+    "seed": 3,
+    "val_benign_n": 653,
+    "epochs_run": 22,
+    "train_time_sec": 2.6424708366394043,
+    "final_val_loss": 27.67335319519043,
+    "threshold_95": 2.015082430839536,
+    "threshold_99": 4.084555110931407
+  },
+  {
+    "contamination_pct": 22,
+    "seed": 4,
+    "val_benign_n": 653,
+    "epochs_run": 13,
+    "train_time_sec": 2.072650194168091,
+    "final_val_loss": 17.050615310668945,
+    "threshold_95": 1.2871454715728758,
+    "threshold_99": 4.008509483337403
+  },
+  {
+    "contamination_pct": 25,
+    "seed": 0,
+    "val_benign_n": 653,
+    "epochs_run": 13,
+    "train_time_sec": 2.0057690143585205,
+    "final_val_loss": 38.63747024536133,
+    "threshold_95": 1.383314251899718,
+    "threshold_99": 4.788557052612307
+  },
+  {
+    "contamination_pct": 25,
+    "seed": 1,
+    "val_benign_n": 653,
+    "epochs_run": 52,
+    "train_time_sec": 4.820592164993286,
+    "final_val_loss": 7.745428085327148,
+    "threshold_95": 0.9365974426269525,
+    "threshold_99": 3.0485544490814225
+  },
+  {
+    "contamination_pct": 25,
+    "seed": 2,
+    "val_benign_n": 653,
+    "epochs_run": 17,
+    "train_time_sec": 2.268637180328369,
+    "final_val_loss": 15.776622772216797,
+    "threshold_95": 1.060072088241577,
+    "threshold_99": 4.257664546966553
+  },
+  {
+    "contamination_pct": 25,
+    "seed": 3,
+    "val_benign_n": 653,
+    "epochs_run": 13,
+    "train_time_sec": 2.131831169128418,
+    "final_val_loss": 20.381000518798828,
+    "threshold_95": 1.1762261867523192,
+    "threshold_99": 4.249185791015626
+  },
+  {
+    "contamination_pct": 25,
+    "seed": 4,
+    "val_benign_n": 653,
+    "epochs_run": 13,
+    "train_time_sec": 1.9831910133361816,
+    "final_val_loss": 14.204570770263672,
+    "threshold_95": 1.294633674621582,
+    "threshold_99": 4.1153789710998545
+  },
+  {
+    "contamination_pct": 28,
+    "seed": 0,
+    "val_benign_n": 653,
+    "epochs_run": 13,
+    "train_time_sec": 1.9787898063659668,
+    "final_val_loss": 22.025405883789062,
+    "threshold_95": 1.3856042623519897,
+    "threshold_99": 4.809648780822756
+  },
+  {
+    "contamination_pct": 28,
+    "seed": 1,
+    "val_benign_n": 653,
+    "epochs_run": 32,
+    "train_time_sec": 3.399543046951294,
+    "final_val_loss": 11.788771629333496,
+    "threshold_95": 0.8771853327751159,
+    "threshold_99": 3.006678438186646
+  },
+  {
+    "contamination_pct": 28,
+    "seed": 2,
+    "val_benign_n": 653,
+    "epochs_run": 18,
+    "train_time_sec": 2.365143060684204,
+    "final_val_loss": 20.96369171142578,
+    "threshold_95": 1.0133394002914426,
+    "threshold_99": 4.025631761550906
+  },
+  {
+    "contamination_pct": 28,
+    "seed": 3,
+    "val_benign_n": 653,
+    "epochs_run": 13,
+    "train_time_sec": 1.9975812435150146,
+    "final_val_loss": 12.98056697845459,
+    "threshold_95": 1.158441185951232,
+    "threshold_99": 4.448006610870362
+  },
+  {
+    "contamination_pct": 28,
+    "seed": 4,
+    "val_benign_n": 653,
+    "epochs_run": 13,
+    "train_time_sec": 2.1747560501098633,
+    "final_val_loss": 24.599706649780273,
+    "threshold_95": 1.291017174720764,
+    "threshold_99": 4.161801147460938
+  },
+  {
+    "contamination_pct": 30,
+    "seed": 0,
+    "val_benign_n": 653,
+    "epochs_run": 13,
+    "train_time_sec": 1.9802320003509521,
+    "final_val_loss": 44.6483154296875,
+    "threshold_95": 1.3560664892196652,
+    "threshold_99": 4.759618873596194
+  },
+  {
+    "contamination_pct": 30,
+    "seed": 1,
+    "val_benign_n": 653,
+    "epochs_run": 68,
+    "train_time_sec": 6.114439964294434,
+    "final_val_loss": 6.811959743499756,
+    "threshold_95": 0.9315801620483392,
+    "threshold_99": 2.482793397903443
+  },
+  {
+    "contamination_pct": 30,
+    "seed": 2,
+    "val_benign_n": 653,
+    "epochs_run": 13,
+    "train_time_sec": 1.976736068725586,
+    "final_val_loss": 18.336429595947266,
+    "threshold_95": 1.269204711914061,
+    "threshold_99": 5.060363178253176
+  },
+  {
+    "contamination_pct": 30,
+    "seed": 3,
+    "val_benign_n": 653,
+    "epochs_run": 13,
+    "train_time_sec": 1.9840052127838135,
+    "final_val_loss": 38.43391418457031,
+    "threshold_95": 1.1202530860900877,
+    "threshold_99": 4.485827312469483
+  },
+  {
+    "contamination_pct": 30,
+    "seed": 4,
+    "val_benign_n": 653,
+    "epochs_run": 13,
+    "train_time_sec": 1.9656810760498047,
+    "final_val_loss": 19.017915725708008,
+    "threshold_95": 1.3125135660171505,
+    "threshold_99": 4.068611946105958
+  }
+]

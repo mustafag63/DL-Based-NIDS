@@ -198,7 +198,8 @@ def build_header(template_header_lines, open_ts: float):
 def write_window(target_pct: float, benign_rows_labeled, attack_rows_labeled,
                   field_names, header_lines, out_base: Path,
                   benign_replacement: bool, attack_replacement: bool,
-                  healthy_windows):
+                  healthy_windows, all_target_pcts,
+                  window_label_override: str = None, extra_meta: dict = None):
     benign_lines, benign_source_counts = dedup_uid(benign_rows_labeled, field_names)
     attack_lines, attack_source_counts = dedup_uid(attack_rows_labeled, field_names)
 
@@ -209,7 +210,7 @@ def write_window(target_pct: float, benign_rows_labeled, attack_rows_labeled,
     min_ts = ts_of(all_rows[0], ts_idx)
     out_header = build_header(header_lines, min_ts)
 
-    window_label = f"window_resampled_{int(target_pct)}pct"
+    window_label = window_label_override or f"window_resampled_{int(target_pct)}pct"
     out_dir = out_base / window_label / "zeek"
     out_dir.mkdir(parents=True, exist_ok=True)
     out_path = out_dir / "conn.log"
@@ -243,10 +244,17 @@ def write_window(target_pct: float, benign_rows_labeled, attack_rows_labeled,
             "benign_with_replacement": benign_replacement,
             "attack_with_replacement": attack_replacement,
             "leakage_prevention": (
-                "15pct ve 20pct ciktilari ayni havuzdan TEK bir allocation "
-                "gecisinde, ortak/kesisen satir olmadan (disjoint) "
-                "boluslendi; without-replacement mumkun oldugunda hicbir "
-                "gercek flow iki window'da birden kullanilmadi."
+                f"{', '.join(f'{int(p) if p == int(p) else p}pct' for p in all_target_pcts)} "
+                "ciktilari ayni havuzdan TEK bir allocation gecisinde (bu "
+                "script invocation'i icinde) ortak/kesisen satir olmadan "
+                "(disjoint) boluslendi; without-replacement mumkun oldugunda "
+                "hicbir gercek flow bu invocation'daki window'lardan "
+                "birden fazlasinda kullanilmadi. NOT: bu garanti sadece "
+                "AYNI invocation'da birlikte uretilen pct'ler arasinda "
+                "gecerli - farkli bir zamanda ayrica calistirilmis "
+                "window_resampled_*pct ciktilariyla (ör. once uretilmis "
+                "15pct/20pct) disjointness garanti edilmez, ayrica kontrol "
+                "edilmelidir (bkz. attack_with_replacement)."
             ),
         },
         "generation_method": (
@@ -263,6 +271,8 @@ def write_window(target_pct: float, benign_rows_labeled, attack_rows_labeled,
         "generated_with": "build_synthetic_window.py",
         "seed": SEED,
     }
+    if extra_meta:
+        meta.update(extra_meta)
     return out_path, meta
 
 
@@ -322,6 +332,7 @@ def main():
             out_base=args.out_base,
             benign_replacement=benign_replacement,
             attack_replacement=attack_replacement,
+            all_target_pcts=args.target_pcts,
             healthy_windows=args.healthy_windows,
         )
         meta_path = out_path.parent.parent / "window_meta.json"
