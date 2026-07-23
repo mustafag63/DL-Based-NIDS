@@ -105,7 +105,18 @@ sırasında eksik ismi tamamlıyor.
 
 ## Sonuçlar
 
-5-seed mean ± std, sabit test setinde:
+> **Not (2026-07-23): bu bölümdeki tablolar ve "Yorum" 5 seed'e dayanıyor,
+> ARTIK GÜNCEL DEĞİL.** Tüm 6 seviye sonradan 20 seed'e çıkarıldı (bkz.
+> "Orijinal 6 seviyenin de 20 seed'e çıkarılması + istatistiksel anlamlılık
+> testi" bölümü, dosyanın sonuna doğru) — özellikle **%12'nin burada
+> "%8'den daha iyi/toparlanma" olarak yorumlanması yanlış çıktı** (20
+> seed'de %12 mean'i %8'inkinden düşük), ve %8/%12'de görülen tekil
+> "kötü seed" aslında %8 ve üstünde her seviyede tekrarlanan sistematik bir
+> bimodalite. Bu bölüm sadece izlenebilirlik için, ilk analiz sürecini
+> göstermek amacıyla korunuyor; güncel sonuç ve yorum için dosyanın sonundaki
+> bölüme bakın.
+
+5-seed mean ± std, sabit test setinde (ESKİ, bkz. yukarıdaki not):
 
 | Contam. | PR-AUC | ROC-AUC | F1 (thr95) | Benign FPR (thr95) | Attack Recall (thr95) |
 |---|---|---|---|---|---|
@@ -480,3 +491,123 @@ zaman dikkatli yapılmalı).
   noktaları)**: bu bulgu göz önüne alınırsa, o noktalar için de en az
   ~15-20 seed düşünülmeli — 5 seed ile üretilecek bir nokta tahmini,
   burada görüldüğü gibi std'yi ciddi şekilde olduğundan düşük gösterebilir.
+
+## Orijinal 6 seviyenin de 20 seed'e çıkarılması + istatistiksel anlamlılık testi (GÜNCEL, önceki 5-seed yorumları geçersiz kılar)
+
+Yukarıdaki bimodalite bulgusu sadece resampled 3 noktada (14.33/19.30/
+21.29%) gözlemlenmişti; orijinal 6 nokta (0/1/2/4/8/12%) hâlâ 5 seed'de
+kalmıştı ve aynı fenomenin onlarda da olup olmadığı bilinmiyordu — özellikle
+%8'de daha önce tek bir "kötü seed" (seed=1) zaten tespit edilmişti, bunun
+izole bir olay mı yoksa sistematik bir kötü-seed oranı mı olduğu netleşmemişti.
+`train_contamination_sweep_original_seedext.py` ve
+`evaluate_contamination_sweep_original_seedext.py`, 0/1/2/4/8/12% için de
+seed 5-19'u (mevcut 0-4'e ek, hiçbiri yeniden eğitilmeden/üzerine
+yazılmadan) eğitip değerlendirdi — `results_per_seed.csv` artık **180 satır**
+(9 seviye × 20 seed), **tüm 9 nokta artık eşit şekilde 20 seed'de**.
+
+### Bimodalite orijinal noktalarda var mı? — Kısmen: sadece %8 ve üstünde
+
+Her seviyede PR-AUC < 0.58 eşiğinin altına düşen seed sayısı (20 seed'in
+kaçının "kötü kümeye" düştüğü):
+
+| Contam. | n_seeds | kötü küme (PR-AUC<0.58) | kötü seed'lerin PR-AUC'ları |
+|---|---|---|---|
+| 0% | 20 | 0/20 | — |
+| 1% | 20 | 0/20 | — |
+| 2% | 20 | 0/20 | — |
+| 4% | 20 | 0/20 | — |
+| 8% | 20 | **4/20 (%20)** | 0.478, 0.551, 0.562, 0.566 |
+| 12% | 20 | **4/20 (%20)** | 0.402, 0.469, 0.520, 0.550 |
+| ~14.33% | 20 | 3/20 (%15) | 0.398, 0.401, 0.545 |
+| ~19.30% | 20 | 2/20 (%10) | 0.451, 0.488 |
+| ~21.29% | 20 | 4/20 (%20) | 0.451, 0.482, 0.540, 0.546 |
+
+**Sonuç: bimodalite 0-4% aralığında yok (20 seed'in hepsi sıkı bir "iyi"
+kümede, ~0.65-0.72), ama 8% ve üstündeki her seviyede var (~%10-20 oranında
+kötü kümeye düşen seed).** Yani bu bir "resampled window'lara özgü" bir
+artefakt değil — kontaminasyon oranı arttıkça VAE'nin eğitim kararlılığının
+kendisi bozuluyor, bu instabilite ilk olarak %8 civarında ortaya çıkıyor ve
+%22'ye kadar her seviyede benzer oranda devam ediyor. %8'de daha önce
+raporlanan tek "outlier" seed (seed=1, PR-AUC=0.478) aslında bu sistematik
+fenomenin 5-seed örneklemede görülen ilk işaretiymiş — izole bir olay değil.
+
+### %12 gerçekten yüksek mi, yoksa 5 şanslı seed miydi? — Şans. %12 özel değil.
+
+Eski 5-seed sonucunda %12 (mean 0.683) %8'den (mean 0.641) belirgin şekilde
+yüksek görünüyordu ve bu "toparlanma" olarak yorumlanmıştı. 20 seed'e
+çıkınca tablo tamamen değişti:
+
+| Contam. | mean (5 seed, eski) | mean (20 seed, yeni) | median (20 seed) |
+|---|---|---|---|
+| 8% | 0.641 | **0.639** | 0.667 |
+| 12% | 0.683 | **0.634** | 0.665 |
+
+**%12'nin 20-seed mean'i (0.634) artık %8'inkinden (0.639) bile düşük** —
+eski 5-seed'lik %12 örneklemi (seed 0-4), şansla, kötü kümeye hiç
+düşmemiş 5 iyi seed'i yakalamıştı (bu, %20 kötü-seed oranıyla 5 bağımsız
+denemenin hepsinin iyi kümeye düşme olasılığı ~0.8^5≈%33 — "olağanüstü"
+değil, makul bir tesadüf, tıpkı %22'nin ilk 5 seed'inde görüldüğü gibi).
+**%12, %8'den istatistiksel olarak farklı/daha iyi bir nokta değil** — ikisi
+de aynı gürültülü platonun içinde, medyanları da (0.665 vs 0.667) neredeyse
+özdeş. Önceki "%12 toparlanma" iddiası **geri çekiliyor**.
+
+### İstatistiksel anlamlılık: her seviye %0'a karşı bootstrap CI (10,000 resample)
+
+`bootstrap_significance.py`, her kontaminasyon seviyesinin PR-AUC
+dağılımını (20 seed across) %0 (20 seed, aynı şekilde) ile karşılaştırıp
+farkın %95 bootstrap güven aralığını hesaplıyor (numpy ile elle resampling,
+10,000 iterasyon, `05_results/bootstrap_significance.csv`):
+
+| Contam. | mean | median | std | diff_from_0% | 95% CI | anlamlı mı |
+|---|---|---|---|---|---|---|
+| 0% | 0.716 | 0.715 | 0.009 | — (baseline) | — | — |
+| 1% | 0.697 | 0.699 | 0.022 | −0.018 | [−0.029, −0.009] | **evet** |
+| 2% | 0.691 | 0.690 | 0.011 | −0.024 | [−0.030, −0.018] | **evet** |
+| 4% | 0.676 | 0.679 | 0.027 | −0.040 | [−0.053, −0.029] | **evet** |
+| 8% | 0.639 | 0.667 | 0.060 | −0.077 | [−0.105, −0.052] | **evet** |
+| 12% | 0.634 | 0.665 | 0.086 | −0.081 | [−0.121, −0.047] | **evet** |
+| ~14.33% | 0.640 | 0.666 | 0.092 | −0.076 | [−0.119, −0.041] | **evet** |
+| ~19.30% | 0.662 | 0.686 | 0.071 | −0.054 | [−0.088, −0.027] | **evet** |
+| ~21.29% | 0.665 | 0.710 | 0.086 | −0.051 | [−0.090, −0.017] | **evet** |
+
+**Sonuç: %0'dan farklı olmayan (CI sıfırı kapsayan) hiçbir seviye yok —
+train setine karışan attack flow oranı ne kadar küçük olursa olsun
+(1% dahil), VAE'nin PR-AUC'u istatistiksel olarak anlamlı şekilde düşüyor.**
+20 seed'lik örneklemle bile hiçbir kontaminasyon seviyesinin CI'ı 0'ı
+kapsamıyor — bu, %0-2 aralığındaki görece küçük farkların (örn. %1'de
+−0.018) bile 5-seed'lik eski tabloda öne sürülen "gürültü içinde
+ayırt edilemez" izlenimden daha güvenilir bir sinyal olduğunu gösteriyor.
+Ayrıca CI genişliği kontaminasyon arttıkça büyüyor (%1'de [−0.029,−0.009],
+genişlik 0.020; %12'de [−0.121,−0.047], genişlik 0.074) — bu da yüksek
+kontaminasyon seviyelerindeki artan seed-to-seed instabilitenin (bimodalite)
+doğrudan bir yansıması.
+
+`contamination_curve.png` artık mean±std gölgeli bant yerine her nokta için
+%95 bootstrap CI error bar'ı gösteriyor (`plot_contamination_curve_with_ci.py`,
+`05_results/bootstrap_point_ci.csv`); şu an tüm noktalar %0'dan anlamlı
+şekilde farklı olduğu için hepsi dolu işaretli, ama script gelecekte
+anlamlı olmayan bir nokta çıkarsa onu otomatik olarak soluk/boş işaretle
+render edecek şekilde yazıldı.
+
+### Güncellenmiş genel yorum (önceki 5-seed'e dayalı yorumları geçersiz kılar)
+
+- **"%0→%4 keskin düşüş, sonrası plato" görüşü hâlâ geçerli** ama artık
+  medyan bazında da net: 0.715→0.699→0.690→0.679 (0→1→2→4%), sonra
+  4-22% aralığı ~0.65-0.71 medyan bandında gürültülü bir platoya oturuyor.
+- **"%12 toparlanma" iddiası YANLIŞTI ve geri çekildi** (yukarıya bkz.) —
+  5 seed'lik şanslı bir örneklemin ürünüydü, 20 seed'de %12 %8'den daha
+  iyi değil.
+- **8% ve üstündeki her seviyede aynı bimodal instabilite var** (~%10-20
+  seed kötü kümeye düşüyor) — bu, %8-22 platosundaki tüm nokta-tahminlerinin
+  (mean özellikle) düşük n'de güvenilmez olduğu, medyan/trimmed_mean'in
+  bu aralıkta mean'den daha temsili olduğu anlamına geliyor.
+- **Ama tüm kontaminasyon seviyeleri, %1 dahil, %0'dan istatistiksel olarak
+  anlamlı şekilde kötü** — yani "toparlanma var mı" sorusunun cevabı
+  netleşti: **hiçbir seviye clean-only'ye (istatistiksel olarak) geri
+  dönmüyor**, sadece 8-22% arası kendi içinde ayırt edilemeyen bir platoda
+  geziniyor. Clean-only (%0) hem mean hem medyan hem de anlamlılık testiyle
+  açık ara en iyi nokta olmaya devam ediyor.
+- **%16/17/18 ara noktaları için**: bu sonuçlar göz önüne alınırsa, o
+  noktalarda da baştan 20 seed ile eğitim yapılması öneriliyor (5 seed'in
+  hem std'yi olduğundan düşük gösterdiği hem de "%12 toparlanma" gibi
+  yanlış bir noktasal iddiaya yol açabildiği burada iki kez gösterildi).

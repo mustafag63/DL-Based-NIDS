@@ -1,0 +1,10 @@
+{
+  "contamination_pct": 1,
+  "seed": 5,
+  "val_benign_n": 653,
+  "epochs_run": 66,
+  "train_time_sec": 4.787927150726318,
+  "final_val_loss": 1.8301411867141724,
+  "threshold_95": 0.1448976904153823,
+  "threshold_99": 0.40627275228500426
+}

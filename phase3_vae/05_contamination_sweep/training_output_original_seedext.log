@@ -1,0 +1,105 @@
+Threshold/early-stop validation set: 653 benign flows (same held-out split as the original sweep)
+
+=== contamination level 0% (seed-extension 5-19) (train n=3049, 0 attack flows in it - unsupervised, labels not used for training) ===
+  seed 5: epochs=148 train_time=  9.5s val_loss=1.1937 thr95=0.0833 thr99=0.2320
+  seed 6: epochs= 43 train_time=  3.4s val_loss=2.1689 thr95=0.1526 thr99=1.4396
+  seed 7: epochs=133 train_time=  8.5s val_loss=1.1809 thr95=0.1383 thr99=0.3452
+  seed 8: epochs= 36 train_time=  3.2s val_loss=2.4773 thr95=0.1796 thr99=1.5478
+  seed 9: epochs=152 train_time=  9.8s val_loss=1.3206 thr95=0.1094 thr99=0.3996
+  seed 10: epochs=175 train_time= 11.1s val_loss=1.0898 thr95=0.0880 thr99=0.2364
+  seed 11: epochs=135 train_time=  8.8s val_loss=1.0891 thr95=0.1234 thr99=0.4094
+  seed 12: epochs= 50 train_time=  4.0s val_loss=2.3687 thr95=0.1870 thr99=1.5090
+  seed 13: epochs=155 train_time= 10.0s val_loss=1.2201 thr95=0.1186 thr99=0.4224
+  seed 14: epochs=113 train_time=  7.7s val_loss=1.1329 thr95=0.0996 thr99=0.2456
+  seed 15: epochs=144 train_time=  9.5s val_loss=1.1217 thr95=0.0934 thr99=0.2263
+  seed 16: epochs=157 train_time= 10.2s val_loss=1.1599 thr95=0.0926 thr99=0.2974
+  seed 17: epochs=164 train_time= 10.7s val_loss=1.3148 thr95=0.1517 thr99=0.8153
+  seed 18: epochs=129 train_time=  8.3s val_loss=1.1739 thr95=0.1260 thr99=0.3656
+  seed 19: epochs= 75 train_time=  5.4s val_loss=2.1747 thr95=0.1329 thr99=1.4839
+
+=== contamination level 1% (seed-extension 5-19) (train n=3080, 31 attack flows in it - unsupervised, labels not used for training) ===
+  seed 5: epochs= 66 train_time=  4.8s val_loss=1.8301 thr95=0.1449 thr99=0.4063
+  seed 6: epochs=129 train_time=  8.3s val_loss=1.5627 thr95=0.1150 thr99=0.2701
+  seed 7: epochs=107 train_time=  7.1s val_loss=1.7245 thr95=0.1657 thr99=0.3552
+  seed 8: epochs=102 train_time=  6.8s val_loss=1.5413 thr95=0.1413 thr99=0.3025
+  seed 9: epochs= 60 train_time=  4.4s val_loss=2.4297 thr95=0.1938 thr99=0.5067
+  seed 10: epochs=119 train_time=  7.8s val_loss=1.4858 thr95=0.1538 thr99=0.3997
+  seed 11: epochs= 92 train_time=  6.6s val_loss=1.6328 thr95=0.1551 thr99=0.4763
+  seed 12: epochs= 39 train_time=  3.2s val_loss=2.5175 thr95=0.2151 thr99=0.4439
+  seed 13: epochs= 74 train_time=  5.2s val_loss=1.6482 thr95=0.1744 thr99=0.4982
+  seed 14: epochs= 79 train_time=  5.5s val_loss=1.6354 thr95=0.1703 thr99=0.3314
+  seed 15: epochs=125 train_time=  8.1s val_loss=1.7114 thr95=0.1048 thr99=0.3009
+  seed 16: epochs= 84 train_time=  5.8s val_loss=1.5921 thr95=0.1331 thr99=0.3644
+  seed 17: epochs=117 train_time=  7.7s val_loss=1.7556 thr95=0.1665 thr99=0.4610
+  seed 18: epochs=121 train_time=  8.4s val_loss=1.4940 thr95=0.1541 thr99=0.3113
+  seed 19: epochs=200 train_time= 12.7s val_loss=1.3634 thr95=0.1734 thr99=0.3968
+
+=== contamination level 2% (seed-extension 5-19) (train n=3111, 62 attack flows in it - unsupervised, labels not used for training) ===
+  seed 5: epochs= 88 train_time=  6.2s val_loss=2.0834 thr95=0.1521 thr99=0.5218
+  seed 6: epochs= 45 train_time=  3.6s val_loss=2.7355 thr95=0.1881 thr99=0.4328
+  seed 7: epochs=103 train_time=  6.8s val_loss=1.7940 thr95=0.1405 thr99=0.3753
+  seed 8: epochs= 99 train_time=  6.7s val_loss=1.8275 thr95=0.1747 thr99=0.4157
+  seed 9: epochs= 59 train_time=  4.4s val_loss=2.4480 thr95=0.2319 thr99=0.5302
+  seed 10: epochs= 89 train_time=  6.1s val_loss=1.8211 thr95=0.1713 thr99=0.3710
+  seed 11: epochs= 90 train_time=  6.1s val_loss=1.7473 thr95=0.1291 thr99=0.5062
+  seed 12: epochs= 75 train_time=  5.2s val_loss=2.5502 thr95=0.1745 thr99=0.5171
+  seed 13: epochs=118 train_time=  8.2s val_loss=1.7069 thr95=0.1638 thr99=0.3961
+  seed 14: epochs= 84 train_time=  5.9s val_loss=1.8885 thr95=0.1534 thr99=0.4534
+  seed 15: epochs=139 train_time=  9.0s val_loss=1.7168 thr95=0.1355 thr99=0.4234
+  seed 16: epochs=168 train_time= 10.7s val_loss=1.6189 thr95=0.1131 thr99=0.3085
+  seed 17: epochs=168 train_time= 10.7s val_loss=1.8708 thr95=0.1507 thr99=0.5374
+  seed 18: epochs=103 train_time=  7.7s val_loss=1.7843 thr95=0.1337 thr99=0.2960
+  seed 19: epochs=100 train_time=  7.4s val_loss=2.5480 thr95=0.1684 thr99=0.6369
+
+=== contamination level 4% (seed-extension 5-19) (train n=3176, 127 attack flows in it - unsupervised, labels not used for training) ===
+  seed 5: epochs=125 train_time=  9.1s val_loss=2.7075 thr95=0.1896 thr99=0.8076
+  seed 6: epochs=200 train_time= 12.9s val_loss=2.6552 thr95=0.1481 thr99=0.4521
+  seed 7: epochs=116 train_time=  8.5s val_loss=2.7132 thr95=0.2864 thr99=0.7815
+  seed 8: epochs=130 train_time=  9.8s val_loss=1.9092 thr95=0.1562 thr99=0.3467
+  seed 9: epochs=105 train_time=  9.8s val_loss=2.8444 thr95=0.1984 thr99=0.5003
+  seed 10: epochs= 88 train_time=  7.1s val_loss=2.1742 thr95=0.1827 thr99=0.6781
+  seed 11: epochs=187 train_time= 12.1s val_loss=2.0797 thr95=0.1388 thr99=0.4997
+  seed 12: epochs=108 train_time=  7.4s val_loss=2.5413 thr95=0.1842 thr99=0.5742
+  seed 13: epochs= 29 train_time=  2.7s val_loss=4.9733 thr95=0.6552 thr99=1.4252
+  seed 14: epochs= 99 train_time=  6.9s val_loss=2.1313 thr95=0.1631 thr99=0.4682
+  seed 15: epochs=161 train_time= 10.9s val_loss=2.0489 thr95=0.1306 thr99=0.3706
+  seed 16: epochs=118 train_time=  8.4s val_loss=1.8200 thr95=0.1846 thr99=0.5628
+  seed 17: epochs= 78 train_time=  5.8s val_loss=2.8512 thr95=0.2485 thr99=1.1836
+  seed 18: epochs=166 train_time= 11.2s val_loss=2.6398 thr95=0.1360 thr99=0.5211
+  seed 19: epochs=102 train_time=  7.6s val_loss=2.6061 thr95=0.1491 thr99=0.5126
+
+=== contamination level 8% (seed-extension 5-19) (train n=3314, 265 attack flows in it - unsupervised, labels not used for training) ===
+  seed 5: epochs=116 train_time=  8.8s val_loss=3.3463 thr95=0.4765 thr99=1.4545
+  seed 6: epochs=174 train_time= 13.2s val_loss=2.4440 thr95=0.1528 thr99=0.5081
+  seed 7: epochs=200 train_time= 16.3s val_loss=2.4590 thr95=0.1887 thr99=0.5521
+  seed 8: epochs= 22 train_time=  2.7s val_loss=8.2308 thr95=0.8030 thr99=4.4039
+  seed 9: epochs= 45 train_time=  3.9s val_loss=5.7028 thr95=0.9094 thr99=2.8196
+  seed 10: epochs= 63 train_time=  5.1s val_loss=4.9626 thr95=0.8752 thr99=1.9102
+  seed 11: epochs=187 train_time= 12.9s val_loss=2.2253 thr95=0.1412 thr99=0.6870
+  seed 12: epochs= 50 train_time=  4.3s val_loss=5.7399 thr95=0.7958 thr99=2.5714
+  seed 13: epochs=162 train_time= 11.3s val_loss=3.4456 thr95=0.2394 thr99=1.1601
+  seed 14: epochs=133 train_time=  9.8s val_loss=2.7773 thr95=0.2426 thr99=0.9266
+  seed 15: epochs=129 train_time=  9.5s val_loss=2.8996 thr95=0.3146 thr99=0.9931
+  seed 16: epochs=117 train_time=  8.7s val_loss=3.2361 thr95=0.3847 thr99=1.2516
+  seed 17: epochs= 50 train_time=  4.4s val_loss=6.0399 thr95=0.7421 thr99=3.0132
+  seed 18: epochs=106 train_time=  7.9s val_loss=3.6701 thr95=0.3137 thr99=1.0793
+  seed 19: epochs=200 train_time= 14.2s val_loss=2.6483 thr95=0.2678 thr99=0.6773
+
+=== contamination level 12% (seed-extension 5-19) (train n=3465, 416 attack flows in it - unsupervised, labels not used for training) ===
+  seed 5: epochs=152 train_time= 11.0s val_loss=4.8022 thr95=0.3752 thr99=1.9849
+  seed 6: epochs= 60 train_time=  5.1s val_loss=6.1201 thr95=1.0609 thr99=3.5041
+  seed 7: epochs= 28 train_time=  4.2s val_loss=11.8373 thr95=1.0647 thr99=3.4751
+  seed 8: epochs= 41 train_time=  3.9s val_loss=6.1526 thr95=0.8649 thr99=2.4059
+  seed 9: epochs= 64 train_time=  5.5s val_loss=6.4793 thr95=0.9409 thr99=3.3619
+  seed 10: epochs= 91 train_time=  7.2s val_loss=5.5288 thr95=0.8660 thr99=2.2036
+  seed 11: epochs= 63 train_time=  5.2s val_loss=6.0061 thr95=0.9437 thr99=2.9217
+  seed 12: epochs= 68 train_time=  5.5s val_loss=6.0698 thr95=0.9464 thr99=2.8740
+  seed 13: epochs=200 train_time= 14.2s val_loss=3.1703 thr95=0.2137 thr99=1.3590
+  seed 14: epochs= 22 train_time=  2.6s val_loss=13.3450 thr95=1.0775 thr99=3.8154
+  seed 15: epochs= 85 train_time=  6.8s val_loss=6.0492 thr95=0.8953 thr99=2.4691
+  seed 16: epochs=132 train_time=  9.9s val_loss=4.5588 thr95=0.3552 thr99=1.2435
+  seed 17: epochs= 13 train_time=  2.0s val_loss=25.6384 thr95=1.4115 thr99=4.9510
+  seed 18: epochs= 74 train_time=  6.1s val_loss=5.9373 thr95=0.7681 thr99=2.6577
+  seed 19: epochs= 47 train_time=  4.4s val_loss=5.6772 thr95=0.9190 thr99=2.7758
+
+Done: 90 models trained this run (6 levels x up to 15 new seeds each, already-trained seeds skipped). Log: /Users/mustafa/Desktop/NIDS/IDS-Project/phase3_vae/05_contamination_sweep/04_models/training_run_log_original_seedext.json (90 entries total, 0 pre-existing entries preserved)
