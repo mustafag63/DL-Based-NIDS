@@ -1,0 +1,72 @@
+{
+  "seed": 42,
+  "k2_fix": "window_10 benign split via GroupShuffleSplit(groups=signature_id), faz2 formula",
+  "k1_fix": "test benign = 70.0% window_10 + 30.0% window_02-08, equal per-window shares (guards against window_06/07 over-representation)",
+  "feature_cols": [
+    "duration_scaled",
+    "orig_bytes_scaled",
+    "resp_bytes_scaled",
+    "orig_pkts_scaled",
+    "resp_pkts_scaled",
+    "bytes_per_sec_scaled",
+    "pkts_per_sec_scaled",
+    "byte_ratio_scaled",
+    "proto_tcp",
+    "proto_udp",
+    "service_dns",
+    "service_http",
+    "service_none",
+    "service_ssh",
+    "conn_state_REJ",
+    "conn_state_RSTO",
+    "conn_state_S1",
+    "conn_state_SF"
+  ],
+  "n_w10_benign": 4356,
+  "n_signatures": 2655,
+  "split_sizes": {
+    "train_pool": 3126,
+    "val": 594,
+    "test_benign_w10": 636,
+    "test_benign_0208": 273
+  },
+  "per_window_0208_sample": {
+    "window_02_3pct": 39,
+    "window_03_5pct": 39,
+    "window_04_7pct": 39,
+    "window_05_12pct": 39,
+    "window_06_15pct": 39,
+    "window_07_17pct": 39,
+    "window_08_22pct": 39
+  },
+  "test_set": {
+    "n_total": 1010,
+    "n_benign": 909,
+    "n_attack": 101,
+    "contamination_pct_actual": 10.0
+  },
+  "contamination_levels": [
+    {
+      "target_pct": 0,
+      "actual_pct": 0.0,
+      "n_benign": 3126,
+      "n_attack": 0,
+      "n_total": 3126
+    },
+    {
+      "target_pct": 4,
+      "actual_pct": 3.9926289926289926,
+      "n_benign": 3126,
+      "n_attack": 130,
+      "n_total": 3256
+    }
+  ],
+  "flow_id_hashes": {
+    "benign_train_pool": "778b03752bacc46029a3ff910247598af549d25097458faeb70538b9e81cfb88",
+    "benign_val": "3a4d3d46186013ade7cf3fa82b6844fef186743769e06298475e968042db2070",
+    "benign_test_w10": "018067688ba1967305240a3c9c90918871ca052ea606c592bfc88d25e6d189ba",
+    "benign_test_0208": "aab9e8c7fda0530a14a7d42cc17f32e069f56375c0c75eb5c5f40a7ccf0c781a",
+    "test_attack_set": "799664c825a3089b2e437ace62a4a27b8c82f2ddb369986933ff236c7bcac718",
+    "attack_pool": "5d54feec52f5b6c8e1feebcb8cd86a57902f0dc13debfb582aaad78bef81cbf5"
+  }
+}

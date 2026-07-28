@@ -1,0 +1,85 @@
+{
+  "seed": 42,
+  "note": "Full 9-point deconfounded sweep train sets; K1/K2/O2 conventions from prepare_contamination_data_v2.py. Resampled levels uid-leak-filtered against test_set_v2.csv (benign AND attack side).",
+  "levels": [
+    {
+      "target_pct": 0,
+      "kind": "injection",
+      "curve_pct": 0,
+      "actual_pct": 0.0,
+      "pre_existing": true
+    },
+    {
+      "target_pct": 1,
+      "kind": "injection",
+      "curve_pct": 1,
+      "actual_pct": 1.013299556681444,
+      "n_total": 3158,
+      "n_attack": 32
+    },
+    {
+      "target_pct": 2,
+      "kind": "injection",
+      "curve_pct": 2,
+      "actual_pct": 2.006269592476489,
+      "n_total": 3190,
+      "n_attack": 64
+    },
+    {
+      "target_pct": 4,
+      "kind": "injection",
+      "curve_pct": 4,
+      "actual_pct": 3.9926289926289926,
+      "pre_existing": true
+    },
+    {
+      "target_pct": 8,
+      "kind": "injection",
+      "curve_pct": 8,
+      "actual_pct": 8.004708652148322,
+      "n_total": 3398,
+      "n_attack": 272
+    },
+    {
+      "target_pct": 12,
+      "kind": "injection",
+      "curve_pct": 12,
+      "actual_pct": 11.993243243243244,
+      "n_total": 3552,
+      "n_attack": 426
+    },
+    {
+      "target_pct": 15,
+      "kind": "resampled",
+      "source_window": "window_resampled_15pct",
+      "curve_pct": 14.38,
+      "actual_pct": 14.380028883845677,
+      "n_leak_dropped_attack": 22,
+      "n_leak_dropped_benign": 30,
+      "n_total": 4847,
+      "n_attack": 697
+    },
+    {
+      "target_pct": 20,
+      "kind": "resampled",
+      "source_window": "window_resampled_20pct",
+      "curve_pct": 19.27,
+      "actual_pct": 19.26889714993804,
+      "n_leak_dropped_attack": 23,
+      "n_leak_dropped_benign": 26,
+      "n_total": 4842,
+      "n_attack": 933
+    },
+    {
+      "target_pct": 22,
+      "kind": "resampled",
+      "source_window": "window_resampled_22pct_clean",
+      "curve_pct": 21.26,
+      "actual_pct": 21.255438160348042,
+      "n_leak_dropped_attack": 28,
+      "n_leak_dropped_benign": 29,
+      "n_total": 4827,
+      "n_attack": 1026
+    }
+  ]
+}

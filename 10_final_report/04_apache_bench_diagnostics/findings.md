@@ -2,6 +2,8 @@
 
 Diagnostic on the clean-only (0% train contamination) VAE (`phase3_vae/05_contamination_sweep/04_models/contam_0pct`, 20 seeds, inference only, no retraining), using `06_attack_type_analysis/test_with_attack_type.csv`. Companion outputs: `feature_diagnostics_{apache_bench,portscan,slowloris}.csv`, `vae_reconstruction_error_hist.png`, `vae_reconstruction_error_summary.csv`, `top_features_apache_bench_boxplots.png`.
 
+> **Skorlama notu (2026-07-28):** `vae_reconstruction_error_hist.png` ve `vae_reconstruction_error_summary.csv` **deterministik z_mean** skoruyla yeniden üretildi (audit O2; threshold_95 val-benign üzerinde deterministik skordan, per-seed — projenin diğer deterministik sonuçlarıyla aynı konvansiyon). Eski stokastik versiyonlar `_stochastic_legacy/` altında. Feature-KS analizleri (bölüm 1-2, 4-5) ve IAT testi (bölüm 6) VAE skoruna bağlı olmadığından değişmedi. Yeniden üretim: `../06_scripts/zmean_rescore/regenerate_apache_diagnostics_zmean.py`.
+
 ## 1. Per-feature separability: apache_bench vs. benign
 
 Ranked by Kolmogorov-Smirnov statistic (0 = distributions fully overlap, 1 = fully separated). All 18 modeling features are scaled (StandardScaler, fit on train-split benign only), one-hots included.
@@ -51,15 +53,15 @@ Per `06_attack_type_analysis/results_single_attack_type.md`, the same clean-only
 
 The KS statistics alone look comparable across all three attack types (all mostly >0.6 on their top features), but the mean-shift-in-benign-std column is where portscan and slowloris diverge sharply from apache_bench: portscan and slowloris push their top features tens to hundreds of benign standard deviations away (huge, obviously-anomalous values -- e.g. slowloris's `byte_ratio_scaled` and portscan's `conn_state_SF`/`conn_state_REJ` are near-categorical splits), while apache_bench's shifts stay within a few benign standard deviations even on its best features. portscan trips connection-state/protocol one-hots that essentially never fire for benign traffic (half-open scans, rejected connections), and slowloris's deliberately slow, long-held connections send far fewer bytes per unit time than any normal flow. apache_bench, by contrast, is ordinary completed-handshake HTTP traffic -- its flows are individually unremarkable; only their volume and repetition are unusual, and the current feature set has no per-flow way to represent that.
 
-## 3. VAE reconstruction error by group
+## 3. VAE reconstruction error by group (deterministic z_mean)
 
-| group | n | mean error | std error | % flagged at mean threshold_95 |
-|---|---|---|---|---|
-| benign | 6821 | 0.06053 | 0.6592 | 4.6% |
-| apache_bench | 1487 | 5.746 | 37.88 | 2.6% |
-| portscan+slowloris | 1623 | 5.691e+04 | 5.028e+04 | 100.0% |
+| group | n | mean error | median error | std error | % flagged at mean threshold_95 (0.0903) |
+|---|---|---|---|---|---|
+| benign | 6821 | 0.04872 | 0.01306 | 0.6561 | 5.1% |
+| apache_bench | 1487 | 5.744 | 0.01711 | 37.92 | 2.6% |
+| portscan+slowloris | 1623 | 5.696e+04 | 8.807e+04 | 5.033e+04 | 100.0% |
 
-See `vae_reconstruction_error_hist.png`: the apache_bench error distribution visibly overlaps the benign distribution far more than portscan/slowloris does, confirming this is a genuine feature-level separability problem, not a downstream thresholding artifact.
+The medians are the honest summary here (both means are outlier-dominated: benign's by a handful of large-error flows, apache_bench's by the same ~39 flows that every seed flags): the **typical apache_bench flow's deterministic error is 0.0171 — only ~1.3x the typical benign flow's 0.0131, and ~5x BELOW the 0.0903 threshold**. With the stochastic scoring noise removed, `vae_reconstruction_error_hist.png` shows this even more sharply than before: apache_bench forms an extremely narrow spike sitting *inside* the right shoulder of the benign distribution, while portscan+slowloris sits ~6 orders of magnitude away. apache_bench's mean (5.74) vs. median (0.017) gap is the 39-flow flagged subset — a fixed set, identical across all 20 seeds (see `deterministic_vs_stochastic_comparison.md`). This confirms, now without any scoring-noise caveat, that the miss is a genuine feature-level separability problem, not a downstream thresholding artifact.
 
 ## 4. Top discriminative features (still weak in absolute terms)
 

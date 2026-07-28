@@ -8,6 +8,24 @@ inference-only'dir — hiçbir modelin yeniden eğitilmesi (retrain) yapılmadı
 sadece zaten eğitilmiş modeller (VAE clean-only `contam_0pct`, 20 seed;
 Dense autoencoder v1 `full_features`, 5 seed) üzerinde değerlendirme yapıldı.
 
+**Skorlama notu (2026-07-28):** VAE sonuçları **deterministik z_mean
+skoruyla** üretilmiştir (reparametrizasyon eval'de atlanır, z = z_mean;
+threshold_95 aynı kuralla val-benign üzerinde deterministik skordan yeniden
+kalibre edilir). Eski tek-örnekli stokastik skorun sonuçları her `vae/`
+klasörünün `_stochastic_legacy/` alt klasöründe saklıdır; gerekçe ve
+sayı-sayı karşılaştırma için bkz.
+[`deterministic_vs_stochastic_comparison.md`](deterministic_vs_stochastic_comparison.md)
+ve [`CHANGELOG.md`](CHANGELOG.md). Dense v1 skoru zaten deterministikti,
+değişmedi.
+
+**Prevalans notu (2026-07-28):** VAE tablolarındaki **PR-AUC ve F1**,
+resampled flow kopyalarının çift sayımının prevalans'ı çarpıtmaması için
+**dedup edilmiş** test setinden hesaplanır (örn. apache_bench için n=968
+distinct flow); **recall/ROC-AUC/FPR** davranış metrikleri olduğundan
+kanonik (dedup'suz) settedir — iki set arasında davranışsal farkın <0.02
+olduğu doğrulanmıştır. Ayrıntı: her tablonun dipnotu +
+[`01_single_attack_type/vae/dedup_sanity_check/`](01_single_attack_type/vae/dedup_sanity_check/results_dedup.md).
+
 **Kapsam kısıtı:** VAE ve Dense v1 sonuçları burada kasıtlı olarak
 **karşılaştırmalı/yan yana grafiklerle birleştirilmemiştir** — her model
 kendi `vae/` veya `dense_v1/` alt klasöründe, kendi grafikleriyle ayrı ayrı
@@ -26,9 +44,13 @@ karşı ayrı ayrı değerlendirme: ROC-AUC, PR-AUC, F1, recall. `vae/` ve
 yana), artı `results.csv`/`results.md`.
 
 **Bulgu:** portscan ve slowloris neredeyse mükemmel tespit ediliyor
-(recall ≥ 0.99), ama **apache_bench her iki modelde de neredeyse hiç
-tespit edilmiyor** (VAE recall = 3.3%, Dense v1 recall = 2.6%, ROC-AUC
-sırasıyla 0.58 / 0.72 — rastgeleye yakın).
+(recall ≥ 0.998), ama **apache_bench her iki modelde de neredeyse hiç
+tespit edilmiyor** (VAE recall = 2.6%, Dense v1 recall = 2.6%, ROC-AUC
+sırasıyla 0.67 / 0.72 — kullanılabilir bir tespit için çok düşük).
+Deterministik skorun çarpıcı bir yan bulgusu: VAE'nin apache_bench
+recall'ünün seed'ler arası std'si **tam 0.0000** — 20 seed'in her biri
+1487 apache_bench flow'unun **aynı 39 tanesini** işaretliyor. Zafiyet
+eğitim rastgeleliğinden bağımsız, yapısal bir feature-uzayı sınırı.
 
 ![VAE — apache_bench ROC & PR](01_single_attack_type/vae/roc_pr_apache_bench.png)
 
@@ -43,9 +65,10 @@ olarak `vae/` ve `dense_v1/` altında.
 **Bulgu:** apache_bench'in poolanmış recall'ü, iyi tespit edilen bir tiple
 (portscan/slowloris) eşleştirildiğinde 34-40%'a "yükseliyormuş" gibi
 görünüyor — ama bu bir yanılsama: ayrıştırılmış recall gösteriyor ki
-apache_bench'in **kendi** flow'larındaki tespit oranı hâlâ ~3.2-3.3%'te
-sabit kalıyor (tek başına değerlendirildiğindeki değerle aynı, seed
-gürültüsü dahilinde). Model, karar verirken diğer flow'ların varlığından
+apache_bench'in **kendi** flow'larındaki tespit oranı 2.62%'de sabit
+kalıyor — tek başına değerlendirildiğindeki değerle **birebir aynı**
+(deterministik skorla artık "seed gürültüsü dahilinde" kaydına bile gerek
+yok; eşitlik tam). Model, karar verirken diğer flow'ların varlığından
 etkilenmiyor — bu statik, flow-bazlı bir dedektör.
 
 ### [03_segmented_injection/](03_segmented_injection/) — Bloklu (contiguous) enjeksiyon
@@ -56,10 +79,20 @@ bitişik blok halinde göründüğü bir akışa yeniden sıralanmış
 `vae/` ve `dense_v1/` her birinde: pozisyona göre reconstruction error
 grafiği (`error_plot.png`) + blok bazlı recall/F1 tablosu (`block_recall_f1.md`).
 
-**Bulgu:** Blok bazlı recall'ler (VAE: 0.032 / 1.00 / 0.988), karışık test
-setindeki değerlerle (0.033 / 1.00 / 0.989) neredeyse birebir aynı —
+**Bulgu:** Blok bazlı recall'ler (VAE: 0.026 / 1.00 / 0.998), karışık test
+setindeki değerlerle (0.026 / 1.00 / 0.998) birebir aynı —
 saldırının karışık mı yoksa bitişik blok halinde mi geldiği modelin
 davranışını değiştirmiyor, çünkü model sequence-state taşımıyor.
+
+**Ek bulgu (benign gap FPR'leri, denetim O6):** Benign segmentlerin FPR'si
+%3.2–%9.3 arasında değişiyor — bu **örnekleme gürültüsü değil, sistematik
+bir kompozisyon etkisi**: benign havuzu ts sırasına göre bölündüğü ve
+window'lar zamanda ardışık olduğu için her gap farklı window'ların
+benign'ini içeriyor, window başına benign FPR ise keskin biçimde farklı
+(window_06: 0.100, window_07: 0.115; diğerleri 0.029–0.053). n≈1705'lik
+gap'lerde binom std ~0.005'tir ve deterministik skor gürültüyü tamamen
+kaldırdığı hâlde desen aynen korunmuştur. Kanıt tablosu:
+[`03_segmented_injection/vae/segment_window_composition.md`](03_segmented_injection/vae/segment_window_composition.md).
 
 ### [04_apache_bench_diagnostics/](04_apache_bench_diagnostics/) — apache_bench neden kaçırılıyor?
 
@@ -101,7 +134,9 @@ Bu raporun tüm sonuçlarını üreten script'lerin referans kopyaları
 `07_segmented_injection/`, `08_dense_v1_comparison/`,
 `apache_bench_diagnostics/`, `dependencies/` (paylaşılan yardımcı
 fonksiyonlar), `report_generation/` (bu final raporun grafiklerini üreten
-script'ler).
+script'ler), `zmean_rescore/` (deterministik z_mean yeniden-skorlama:
+tabloları üreten `run_zmean_rescore.py` + grafikleri üreten
+`regenerate_plots_deterministic.py`).
 
 ### [07_final_written_report/](07_final_written_report/) — Yazılı final rapor (Fransızca)
 

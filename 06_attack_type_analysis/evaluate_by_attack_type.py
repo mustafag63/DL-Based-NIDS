@@ -62,6 +62,7 @@ RESAMPLED_20_PATH = os.path.join(
 
 MODEL_DIR = os.path.join(SWEEP_DIR, "04_models", "contam_0pct")
 MANIFEST_PATH = os.path.join(SWEEP_DIR, "01_data", "manifest.json")
+VAL_BENIGN_PATH = os.path.join(SWEEP_DIR, "01_data", "val_benign.csv")
 
 RESULTS_CSV = os.path.join(HERE, "results_single_attack_type.csv")
 RESULTS_MD = os.path.join(HERE, "results_single_attack_type.md")
@@ -81,6 +82,16 @@ _spec.loader.exec_module(_sweep_eval)
 reconstruction_error = _sweep_eval.reconstruction_error
 
 
+def reconstruction_error_zmean(encoder, decoder, X):
+    """Deterministic reconstruction error: decode z = z_mean directly, skipping
+    the reparameterization trick's eps sample. Same trained weights, no
+    sampling noise, no eval seed -- the score of a given flow under a given
+    model is a single fixed number."""
+    z_mean, _ = encoder(X, training=False)
+    recon = decoder(z_mean, training=False).numpy()
+    return np.mean(np.square(X - recon), axis=1)
+
+
 class VAEBackend:
     """Model backend for the clean-only (0% contamination) VAE, contam_0pct.
 
@@ -92,23 +103,56 @@ class VAEBackend:
     """
     name = "vae_clean_contam0pct"
 
-    def __init__(self, model_dir=MODEL_DIR, seeds=SEEDS, eval_seed_offset=900_000):
+    def __init__(self, model_dir=MODEL_DIR, seeds=SEEDS, eval_seed_offset=900_000,
+                 deterministic=False):
         self.model_dir = model_dir
         self.seeds = seeds
         self.eval_seed_offset = eval_seed_offset
+        # deterministic=True: score with z = z_mean (reconstruction_error_zmean),
+        # no eps sample, no eval seed. The stored threshold.json values were
+        # calibrated on STOCHASTIC val errors (train_contamination_sweep_*),
+        # so in this mode threshold_95 is recomputed per seed as the 95th
+        # percentile of the deterministic error on the same held-out val-benign
+        # set (01_data/val_benign.csv) -- same convention DenseBackend already
+        # uses (threshold computed fresh from val, not read from a file).
+        self.deterministic = deterministic
+        if deterministic:
+            self.name = "vae_clean_contam0pct_zmean"
+        self._model_cache = {}
+        self._val_benign_X = None
+
+    def _val_benign_X_cached(self):
+        if self._val_benign_X is None:
+            val_df = pd.read_csv(VAL_BENIGN_PATH)
+            assert (val_df["is_attack"] == 0).all()
+            self._val_benign_X = val_df[load_feature_cols()].values.astype("float32")
+            print(f"  [VAEBackend] val-benign reference set for deterministic "
+                  f"threshold_95: {len(self._val_benign_X)} flows")
+        return self._val_benign_X
 
     def load(self, seed):
+        if seed in self._model_cache:
+            return self._model_cache[seed]
         seed_dir = os.path.join(self.model_dir, f"seed_{seed}")
         encoder = tf.keras.models.load_model(os.path.join(seed_dir, "encoder.keras"), safe_mode=False)
         decoder = tf.keras.models.load_model(os.path.join(seed_dir, "decoder.keras"), safe_mode=False)
         threshold_info = json.loads(open(os.path.join(seed_dir, "threshold.json")).read())
-        return {"encoder": encoder, "decoder": decoder, "threshold_95": threshold_info["threshold_95"]}
+        model = {"encoder": encoder, "decoder": decoder, "threshold_95": threshold_info["threshold_95"]}
+        if self.deterministic:
+            val_errors = reconstruction_error_zmean(encoder, decoder, self._val_benign_X_cached())
+            model["threshold_95_zmean"] = float(np.percentile(val_errors, 95))
+        self._model_cache[seed] = model
+        return model
 
     def errors(self, model, X, seed):
+        if self.deterministic:
+            return reconstruction_error_zmean(model["encoder"], model["decoder"], X)
         eval_seed = self.eval_seed_offset + seed
         return reconstruction_error(model["encoder"], model["decoder"], X, eval_seed)
 
     def threshold(self, model, seed):
+        if self.deterministic:
+            return model["threshold_95_zmean"]
         return model["threshold_95"]
 
 
@@ -251,14 +295,19 @@ def compute_error_matrix(X, backend=None):
     return error_matrix, thresholds
 
 
-def main():
+def main(backend=None, results_csv=RESULTS_CSV, results_md=RESULTS_MD, score_note=None):
+    """Default arguments reproduce the original stochastic-scoring run byte-for-
+    byte. Pass backend=VAEBackend(deterministic=True) plus _zmean output paths
+    to produce the deterministic z_mean rescoring without touching the original
+    result files (see 10_final_report/06_scripts/zmean_rescore/)."""
+    backend = backend or DEFAULT_BACKEND
     feature_cols = load_feature_cols()
     df = assemble_labeled_features_df(feature_cols)
 
     all_rows = []
     for attack_type in ATTACK_TYPES:
         subset = df[(df["is_attack"] == 0) | (df["attack_type"] == attack_type)].copy()
-        all_rows.extend(evaluate_group(subset, feature_cols, attack_type))
+        all_rows.extend(evaluate_group(subset, feature_cols, attack_type, backend=backend))
 
     per_seed_df = pd.DataFrame(all_rows)
 
@@ -266,19 +315,24 @@ def main():
     summary = per_seed_df.groupby(["attack_type", "n_benign", "n_attack"])[metric_cols].agg(["mean", "std"])
     summary.columns = [f"{col}_{stat}" for col, stat in summary.columns]
     summary = summary.reset_index()
-    summary.to_csv(RESULTS_CSV, index=False)
-    print(f"\nWrote {RESULTS_CSV}")
+    summary.to_csv(results_csv, index=False)
+    print(f"\nWrote {results_csv}")
 
+    n_seeds = len(list(backend.seeds))
     lines = [
         "# Clean-only (0% contamination) VAE, evaluated per attack type",
         "",
         f"Model: `phase3_vae/05_contamination_sweep/04_models/contam_0pct` "
-        f"({len(SEEDS)} seeds, threshold_95 per seed, inference only, no retraining).",
+        f"({n_seeds} seeds, threshold_95 per seed, inference only, no retraining).",
         "",
         "Each row = that attack type's flows vs. the full test-split benign set "
         "only (other attack types excluded from that run). Mean +/- std across "
-        f"{len(SEEDS)} seeds.",
+        f"{n_seeds} seeds.",
         "",
+    ]
+    if score_note:
+        lines += [score_note, ""]
+    lines += [
         "| attack_type | n_benign | n_attack | ROC-AUC | PR-AUC | F1 (thr95) | benign FPR (thr95) | attack recall (thr95) |",
         "|---|---|---|---|---|---|---|---|",
     ]
@@ -291,9 +345,9 @@ def main():
             f"{r['benign_fpr_mean']:.4f} +/- {r['benign_fpr_std']:.4f} | "
             f"{r['attack_recall_mean']:.4f} +/- {r['attack_recall_std']:.4f} |"
         )
-    with open(RESULTS_MD, "w") as f:
+    with open(results_md, "w") as f:
         f.write("\n".join(lines) + "\n")
-    print(f"Wrote {RESULTS_MD}")
+    print(f"Wrote {results_md}")
 
 
 if __name__ == "__main__":

@@ -39,7 +39,14 @@ def pair_name(pair):
     return "+".join(pair)
 
 
-def main():
+def main(backend=None, results_csv=RESULTS_CSV, results_md=RESULTS_MD,
+         combined_md=COMBINED_MD, single_results_csv=None, score_note=None):
+    """Default arguments reproduce the original stochastic-scoring run. Pass
+    backend=single.VAEBackend(deterministic=True) plus _zmean output paths (and
+    the matching _zmean single-run CSV via single_results_csv, so the combined
+    solo-vs-pair table compares like with like) for the deterministic z_mean
+    rescoring -- see 10_final_report/06_scripts/zmean_rescore/."""
+    backend = backend or single.DEFAULT_BACKEND
     feature_cols = single.load_feature_cols()
     df = single.assemble_labeled_features_df(feature_cols)
 
@@ -47,7 +54,7 @@ def main():
     for pair in PAIRS:
         name = pair_name(pair)
         subset = df[(df["is_attack"] == 0) | (df["attack_type"].isin(pair))].copy()
-        all_rows.extend(single.evaluate_group(subset, feature_cols, name))
+        all_rows.extend(single.evaluate_group(subset, feature_cols, name, backend=backend))
 
     per_seed_df = pd.DataFrame(all_rows)
 
@@ -59,18 +66,23 @@ def main():
     order = {pair_name(p): i for i, p in enumerate(PAIRS)}
     summary["_order"] = summary["attack_type_pair"].map(order)
     summary = summary.sort_values("_order").drop(columns="_order").reset_index(drop=True)
-    summary.to_csv(RESULTS_CSV, index=False)
-    print(f"\nWrote {RESULTS_CSV}")
+    summary.to_csv(results_csv, index=False)
+    print(f"\nWrote {results_csv}")
 
+    n_seeds = len(list(backend.seeds))
     lines = [
         "# Clean-only (0% contamination) VAE, evaluated per pairwise attack-type combination",
         "",
         f"Model: `phase3_vae/05_contamination_sweep/04_models/contam_0pct` "
-        f"({len(single.SEEDS)} seeds, threshold_95 per seed, inference only, no retraining).",
+        f"({n_seeds} seeds, threshold_95 per seed, inference only, no retraining).",
         "",
         "Each row = both listed attack types' flows vs. the full test-split benign set "
-        f"(the third attack type is excluded from that run). Mean +/- std across {len(single.SEEDS)} seeds.",
+        f"(the third attack type is excluded from that run). Mean +/- std across {n_seeds} seeds.",
         "",
+    ]
+    if score_note:
+        lines += [score_note, ""]
+    lines += [
         "| attack_type_pair | n_benign | n_attack | ROC-AUC | PR-AUC | F1 (thr95) | benign FPR (thr95) | attack recall (thr95) |",
         "|---|---|---|---|---|---|---|---|",
     ]
@@ -83,20 +95,22 @@ def main():
             f"{r['benign_fpr_mean']:.4f} +/- {r['benign_fpr_std']:.4f} | "
             f"{r['attack_recall_mean']:.4f} +/- {r['attack_recall_std']:.4f} |"
         )
-    with open(RESULTS_MD, "w") as f:
+    with open(results_md, "w") as f:
         f.write("\n".join(lines) + "\n")
-    print(f"Wrote {RESULTS_MD}")
+    print(f"Wrote {results_md}")
 
     subtype_recall_cols = [c for c in per_seed_df.columns if c.startswith("recall__")]
     subtype_summary = per_seed_df.groupby("attack_type")[subtype_recall_cols].agg(["mean", "std"])
     subtype_summary.columns = [f"{col}_{stat}" for col, stat in subtype_summary.columns]
     subtype_summary = subtype_summary.reset_index().rename(columns={"attack_type": "attack_type_pair"})
 
-    write_combined_table(single, summary, subtype_summary)
+    write_combined_table(single, summary, subtype_summary,
+                         single_results_csv=single_results_csv, combined_md=combined_md)
 
 
-def write_combined_table(single, pairwise_summary, subtype_summary):
-    single_df = pd.read_csv(single.RESULTS_CSV)
+def write_combined_table(single, pairwise_summary, subtype_summary,
+                         single_results_csv=None, combined_md=COMBINED_MD):
+    single_df = pd.read_csv(single_results_csv or single.RESULTS_CSV)
 
     def fmt(row):
         return (
@@ -162,9 +176,9 @@ def write_combined_table(single, pairwise_summary, subtype_summary):
                 f"| {r['attack_type_pair']} (pair) | {r['attack_recall_mean']:.4f} +/- {r['attack_recall_std']:.4f} | {ab_only} |"
             )
 
-    with open(COMBINED_MD, "w") as f:
+    with open(combined_md, "w") as f:
         f.write("\n".join(lines) + "\n")
-    print(f"Wrote {COMBINED_MD}")
+    print(f"Wrote {combined_md}")
 
 
 if __name__ == "__main__":

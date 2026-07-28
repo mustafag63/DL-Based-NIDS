@@ -187,9 +187,15 @@ def run_segmented_evaluation(
         lines.append(
             f"\nBenign-segment FPR ranges {fpr_vals.min():.4f}-{fpr_vals.max():.4f} across the "
             f"{len(benign_rows)} benign gaps in this stream (vs. a single {benign_rows['fpr_mean'].mean():.4f} "
-            "average if measured as one block) -- some spread is expected from smaller per-segment "
-            "sample sizes rather than the model drifting, since it has no state carried between "
-            "flows; worth a larger-n rerun before reading anything into the specific gap sizes."
+            "average if measured as one block). This spread is a SYSTEMATIC composition effect, "
+            "not sampling noise: the benign pool is split into contiguous gaps in ts order "
+            "(build_segmented_injection.py) and the capture windows are consecutive in time, so "
+            "each gap holds a different mix of windows' benign flows, and per-window benign FPR "
+            "differs. At these gap sizes the binomial std of an FPR near 0.05 is only ~0.005, "
+            "which cannot produce a spread this wide; it is also not the model drifting (no "
+            "state is carried between flows). See segment_window_composition.md (next to the "
+            "VAE run's outputs; the segment-by-window composition itself is model-independent) "
+            "for the per-gap window breakdown."
         )
 
     with open(results_md, "w") as f:

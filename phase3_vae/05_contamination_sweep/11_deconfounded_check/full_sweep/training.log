@@ -1,0 +1,221 @@
+V2 val: 594; V2 test: 1010 (909 benign / 101 attack)
+
+=== V2 level target=0% (curve x=0, n=3126, attack_in_train=0) ===
+  seed 0: exists, skipping training
+  seed 1: exists, skipping training
+  seed 2: exists, skipping training
+  seed 3: exists, skipping training
+  seed 4: exists, skipping training
+  seed 5: exists, skipping training
+  seed 6: exists, skipping training
+  seed 7: exists, skipping training
+  seed 8: exists, skipping training
+  seed 9: exists, skipping training
+  seed 10: exists, skipping training
+  seed 11: exists, skipping training
+  seed 12: exists, skipping training
+  seed 13: exists, skipping training
+  seed 14: exists, skipping training
+  seed 15: exists, skipping training
+  seed 16: exists, skipping training
+  seed 17: exists, skipping training
+  seed 18: exists, skipping training
+  seed 19: exists, skipping training
+LEVEL DONE v2 target=0% curve=0: PR-AUC=0.7516+/-0.0281 recall=0.6673 FPR=0.0256
+
+=== V2 level target=1% (curve x=1, n=3158, attack_in_train=32) ===
+  seed 0: exists, skipping training
+  seed 1: exists, skipping training
+  seed 2: epochs= 84 time=  6.2s thr95=0.1440
+  seed 3: epochs= 69 time=  5.1s thr95=0.1103
+  seed 4: epochs= 70 time=  5.3s thr95=0.1213
+  seed 5: epochs= 94 time=  6.8s thr95=0.1073
+  seed 6: epochs=142 time=  9.4s thr95=0.0989
+  seed 7: epochs= 69 time=  5.0s thr95=0.1377
+  seed 8: epochs= 79 time=  5.5s thr95=0.1284
+  seed 9: epochs=122 time=  7.8s thr95=0.1333
+  seed 10: epochs=100 time=  6.9s thr95=0.0928
+  seed 11: epochs= 84 time=  5.7s thr95=0.1492
+  seed 12: epochs= 43 time=  3.5s thr95=0.1258
+  seed 13: epochs= 41 time=  3.4s thr95=0.1307
+  seed 14: epochs= 29 time=  2.6s thr95=0.2023
+  seed 15: epochs= 49 time=  4.0s thr95=0.1218
+  seed 16: epochs= 97 time=  6.5s thr95=0.1359
+  seed 17: epochs= 85 time=  5.8s thr95=0.1235
+  seed 18: epochs= 88 time=  6.0s thr95=0.1591
+  seed 19: epochs= 90 time=  6.1s thr95=0.1358
+LEVEL DONE v2 target=1% curve=1: PR-AUC=0.7250+/-0.0250 recall=0.6644 FPR=0.0198
+
+=== V2 level target=2% (curve x=2, n=3190, attack_in_train=64) ===
+  seed 0: epochs=200 time= 12.5s thr95=0.1576
+  seed 1: epochs= 99 time=  7.0s thr95=0.1280
+  seed 2: epochs=127 time=  8.4s thr95=0.1351
+  seed 3: epochs= 84 time=  5.9s thr95=0.1426
+  seed 4: epochs=116 time=  7.6s thr95=0.1480
+  seed 5: epochs=122 time=  8.0s thr95=0.1420
+  seed 6: epochs=146 time=  9.5s thr95=0.1244
+  seed 7: epochs= 79 time=  5.9s thr95=0.1379
+  seed 8: epochs= 67 time=  5.6s thr95=0.1323
+  seed 9: epochs= 29 time=  2.9s thr95=0.1588
+  seed 10: epochs= 80 time=  5.9s thr95=0.1213
+  seed 11: epochs=100 time=  7.2s thr95=0.1561
+  seed 12: epochs= 46 time=  3.9s thr95=0.1296
+  seed 13: epochs=134 time=  9.4s thr95=0.1696
+  seed 14: epochs=149 time= 10.2s thr95=0.1044
+  seed 15: epochs= 37 time=  3.1s thr95=0.1450
+  seed 16: epochs= 86 time=  6.1s thr95=0.1615
+  seed 17: epochs= 34 time=  3.5s thr95=0.1360
+  seed 18: epochs= 70 time=  5.1s thr95=0.1282
+  seed 19: epochs= 85 time=  6.0s thr95=0.1764
+LEVEL DONE v2 target=2% curve=2: PR-AUC=0.7022+/-0.0299 recall=0.6569 FPR=0.0210
+
+=== V2 level target=4% (curve x=4, n=3256, attack_in_train=130) ===
+  seed 0: exists, skipping training
+  seed 1: exists, skipping training
+  seed 2: exists, skipping training
+  seed 3: exists, skipping training
+  seed 4: exists, skipping training
+  seed 5: exists, skipping training
+  seed 6: exists, skipping training
+  seed 7: exists, skipping training
+  seed 8: exists, skipping training
+  seed 9: exists, skipping training
+  seed 10: exists, skipping training
+  seed 11: exists, skipping training
+  seed 12: exists, skipping training
+  seed 13: exists, skipping training
+  seed 14: exists, skipping training
+  seed 15: exists, skipping training
+  seed 16: exists, skipping training
+  seed 17: exists, skipping training
+  seed 18: exists, skipping training
+  seed 19: exists, skipping training
+LEVEL DONE v2 target=4% curve=4: PR-AUC=0.6529+/-0.0393 recall=0.6342 FPR=0.0355
+
+=== V2 level target=8% (curve x=8, n=3398, attack_in_train=272) ===
+  seed 0: epochs= 47 time=  3.9s thr95=0.5199
+  seed 1: epochs= 64 time=  4.9s thr95=0.2157
+  seed 2: epochs= 51 time=  4.1s thr95=0.3974
+  seed 3: epochs= 64 time=  4.8s thr95=0.2087
+  seed 4: epochs= 90 time=  6.5s thr95=0.5069
+  seed 5: epochs= 97 time=  6.8s thr95=0.2608
+  seed 6: epochs= 86 time=  6.2s thr95=0.2444
+  seed 7: epochs= 74 time=  6.0s thr95=0.4126
+  seed 8: epochs= 80 time=  5.8s thr95=0.1944
+  seed 9: epochs= 95 time=  7.0s thr95=0.1902
+  seed 10: epochs= 82 time=  5.9s thr95=0.4921
+  seed 11: epochs=123 time=  8.2s thr95=0.1925
+  seed 12: epochs= 58 time=  4.4s thr95=0.2002
+  seed 13: epochs= 41 time=  3.5s thr95=0.4162
+  seed 14: epochs= 63 time=  4.7s thr95=0.2112
+  seed 15: epochs= 35 time=  3.0s thr95=0.4149
+  seed 16: epochs= 53 time=  4.1s thr95=0.3476
+  seed 17: epochs= 43 time=  3.6s thr95=0.4170
+  seed 18: epochs= 72 time=  5.3s thr95=0.1926
+  seed 19: epochs= 89 time=  7.0s thr95=0.1930
+LEVEL DONE v2 target=8% curve=8: PR-AUC=0.6355+/-0.0481 recall=0.6238 FPR=0.0409
+
+=== V2 level target=12% (curve x=12, n=3552, attack_in_train=426) ===
+  seed 0: epochs= 54 time=  4.4s thr95=0.4495
+  seed 1: epochs= 41 time=  3.5s thr95=0.3777
+  seed 2: epochs=172 time= 11.6s thr95=0.1857
+  seed 3: epochs= 71 time=  5.4s thr95=0.2013
+  seed 4: epochs= 14 time=  1.9s thr95=0.6510
+  seed 5: epochs= 79 time=  5.9s thr95=0.4606
+  seed 6: epochs=124 time=  8.5s thr95=0.2036
+  seed 7: epochs= 13 time=  1.8s thr95=0.6544
+  seed 8: epochs= 25 time=  2.5s thr95=0.2823
+  seed 9: epochs=112 time=  7.8s thr95=0.2176
+  seed 10: epochs= 74 time=  5.5s thr95=0.4783
+  seed 11: epochs= 13 time=  1.9s thr95=0.6713
+  seed 12: epochs= 18 time=  2.1s thr95=0.5982
+  seed 13: epochs= 49 time=  4.0s thr95=0.5086
+  seed 14: epochs= 19 time=  3.0s thr95=0.6052
+  seed 15: epochs= 43 time=  3.7s thr95=0.4368
+  seed 16: epochs=190 time= 12.6s thr95=0.2050
+  seed 17: epochs= 13 time=  1.8s thr95=0.6863
+  seed 18: epochs=127 time=  8.8s thr95=0.1800
+  seed 19: epochs= 49 time=  4.0s thr95=0.5106
+LEVEL DONE v2 target=12% curve=12: PR-AUC=0.6561+/-0.0655 recall=0.6163 FPR=0.0468
+
+=== V2 level target=15% (curve x=14.38, n=4847, attack_in_train=697) ===
+  seed 0: epochs= 54 time=  4.9s thr95=0.4797
+  seed 1: epochs= 46 time=  4.3s thr95=0.4974
+  seed 2: epochs=200 time= 15.2s thr95=0.2273
+  seed 3: epochs= 37 time=  3.6s thr95=0.5407
+  seed 4: epochs= 13 time=  2.0s thr95=0.6464
+  seed 5: epochs= 83 time=  6.9s thr95=0.2992
+  seed 6: epochs=100 time=  8.2s thr95=0.2990
+  seed 7: epochs= 13 time=  2.0s thr95=0.6527
+  seed 8: epochs= 62 time=  5.4s thr95=0.4245
+  seed 9: epochs= 47 time=  4.5s thr95=0.5345
+  seed 10: epochs= 52 time=  4.7s thr95=0.4938
+  seed 11: epochs= 13 time=  3.0s thr95=0.6696
+  seed 12: epochs= 59 time=  5.3s thr95=0.4884
+  seed 13: epochs= 74 time=  6.2s thr95=0.5116
+  seed 14: epochs= 19 time=  2.4s thr95=0.5793
+  seed 15: epochs= 43 time=  4.0s thr95=0.4158
+  seed 16: epochs=200 time= 15.2s thr95=0.1932
+  seed 17: epochs= 13 time=  2.0s thr95=0.6999
+  seed 18: epochs= 59 time=  5.2s thr95=0.5113
+  seed 19: epochs= 60 time=  5.3s thr95=0.4798
+LEVEL DONE v2 target=15% curve=14.38: PR-AUC=0.6010+/-0.0972 recall=0.5540 FPR=0.0476
+
+=== V2 level target=20% (curve x=19.27, n=4842, attack_in_train=933) ===
+  seed 0: epochs= 13 time=  2.0s thr95=0.6873
+  seed 1: epochs= 94 time=  7.7s thr95=0.4442
+  seed 2: epochs= 18 time=  2.4s thr95=0.5891
+  seed 3: epochs= 13 time=  2.0s thr95=0.6863
+  seed 4: epochs= 13 time=  2.0s thr95=0.6412
+  seed 5: epochs= 47 time=  4.4s thr95=0.4820
+  seed 6: epochs= 69 time=  5.9s thr95=0.5258
+  seed 7: epochs= 13 time=  2.0s thr95=0.6457
+  seed 8: epochs= 20 time=  2.4s thr95=0.4346
+  seed 9: epochs= 41 time=  4.0s thr95=0.5141
+  seed 10: epochs= 13 time=  2.0s thr95=0.7041
+  seed 11: epochs= 13 time=  3.3s thr95=0.6807
+  seed 12: epochs= 55 time=  5.2s thr95=0.5002
+  seed 13: epochs= 35 time=  3.7s thr95=0.4944
+  seed 14: epochs= 17 time=  2.3s thr95=0.6817
+  seed 15: epochs= 14 time=  2.0s thr95=0.6701
+  seed 16: epochs= 25 time=  2.9s thr95=0.6486
+  seed 17: epochs= 13 time=  2.0s thr95=0.6954
+  seed 18: epochs= 41 time=  4.0s thr95=0.5005
+  seed 19: epochs= 83 time=  7.0s thr95=0.4957
+LEVEL DONE v2 target=20% curve=19.27: PR-AUC=0.6616+/-0.0762 recall=0.6228 FPR=0.0515
+
+=== V2 level target=22% (curve x=21.26, n=4827, attack_in_train=1026) ===
+  seed 0: epochs= 13 time=  2.2s thr95=0.6864
+  seed 1: epochs= 60 time=  5.6s thr95=0.4884
+  seed 2: epochs= 18 time=  2.5s thr95=0.5752
+  seed 3: epochs= 13 time=  2.1s thr95=0.6906
+  seed 4: epochs= 13 time=  2.1s thr95=0.6399
+  seed 5: epochs= 34 time=  3.8s thr95=0.5218
+  seed 6: epochs= 56 time=  5.4s thr95=0.5128
+  seed 7: epochs= 13 time=  2.0s thr95=0.6539
+  seed 8: epochs= 23 time=  2.7s thr95=0.4187
+  seed 9: epochs= 14 time=  2.0s thr95=0.6125
+  seed 10: epochs= 41 time=  4.0s thr95=0.4571
+  seed 11: epochs= 13 time=  2.0s thr95=0.7062
+  seed 12: epochs= 35 time=  3.6s thr95=0.3828
+  seed 13: epochs=149 time= 11.8s thr95=0.1967
+  seed 14: epochs= 17 time=  2.3s thr95=0.7173
+  seed 15: epochs= 70 time=  6.0s thr95=0.4256
+  seed 16: epochs= 13 time=  3.6s thr95=0.6712
+  seed 17: epochs= 13 time=  2.1s thr95=0.6824
+  seed 18: epochs= 40 time=  4.0s thr95=0.4447
+  seed 19: epochs= 16 time=  2.3s thr95=0.5921
+LEVEL DONE v2 target=22% curve=21.26: PR-AUC=0.6433+/-0.0866 recall=0.5946 FPR=0.0517
+
+Wrote /Users/mustafa/Desktop/NIDS/IDS-Project/phase3_vae/05_contamination_sweep/11_deconfounded_check/full_sweep/results_all_points.csv (180 rows)
+LEVEL DONE v1_det target=0%: PR-AUC=0.7274+/-0.0177 recall=0.6438 FPR=0.0422
+LEVEL DONE v1_det target=1%: PR-AUC=0.7100+/-0.0244 recall=0.6404 FPR=0.0406
+LEVEL DONE v1_det target=2%: PR-AUC=0.7062+/-0.0194 recall=0.6438 FPR=0.0397
+LEVEL DONE v1_det target=4%: PR-AUC=0.6831+/-0.0264 recall=0.6397 FPR=0.0381
+LEVEL DONE v1_det target=8%: PR-AUC=0.6494+/-0.0585 recall=0.6103 FPR=0.0429
+LEVEL DONE v1_det target=12%: PR-AUC=0.6450+/-0.0834 recall=0.5890 FPR=0.0441
+LEVEL DONE v1_det target=15%: PR-AUC=0.6492+/-0.0904 recall=0.5966 FPR=0.0424
+LEVEL DONE v1_det target=20%: PR-AUC=0.6681+/-0.0753 recall=0.6089 FPR=0.0405
+LEVEL DONE v1_det target=22%: PR-AUC=0.6700+/-0.0759 recall=0.6055 FPR=0.0418
+Wrote /Users/mustafa/Desktop/NIDS/IDS-Project/phase3_vae/05_contamination_sweep/11_deconfounded_check/full_sweep/v1_deterministic_results_per_seed.csv (180 rows)
+ALL DONE

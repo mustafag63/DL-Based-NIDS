@@ -1,0 +1,9 @@
+{
+  "contamination_pct": 2,
+  "seed": 1,
+  "scoring": "deterministic_zmean",
+  "epochs_run": 99,
+  "train_time_sec": 6.968880891799927,
+  "final_val_loss": 4.418953895568848,
+  "threshold_95": 0.128030513972044
+}
