@@ -1,0 +1,10 @@
+{
+  "block_order": [
+    "apache_bench",
+    "slowloris",
+    "portscan"
+  ],
+  "n_segments": 7,
+  "n_flows": 9931,
+  "source": "06_attack_type_analysis/test_with_attack_type.csv"
+}
