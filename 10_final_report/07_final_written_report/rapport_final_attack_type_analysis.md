@@ -270,7 +270,105 @@ totalement manqué.
 
 ---
 
-## 6. Conclusion générale
+## 6. Diagnostic complémentaire — pourquoi apache_bench échappe au VAE
+
+**Protocole.** Pour comprendre *pourquoi* apache_bench n'est pas séparé du
+trafic benign (sections 2-5), un diagnostic feature-par-feature a été mené :
+test de Kolmogorov-Smirnov (KS) et écart de moyenne (en écarts-types benign)
+entre apache_bench et benign sur les 18 colonnes de features scaled, puis un
+test d'hypothèse temporelle basé sur le temps inter-arrivée (IAT) entre
+flows consécutifs de même label. Aucune donnée modifiée, aucun
+réentraînement — inference-only sur le VAE clean-only `contam_0pct`, comme
+le reste de ce rapport (source complète :
+`10_final_report/04_apache_bench_diagnostics/`).
+
+### 6.1 Séparabilité statistique vs. taille d'effet
+
+| Feature | Groupe | KS stat | Écart moyen (σ benign) |
+|---|---|---|---|
+| orig_pkts_scaled | volume paquets | 0.755 | -0.44 σ |
+| orig_bytes_scaled | volume octets | 0.755 | -0.39 σ |
+| resp_bytes_scaled | volume octets | 0.754 | -0.68 σ |
+| resp_pkts_scaled | volume paquets | 0.754 | -0.62 σ |
+| duration_scaled | durée | 0.693 | -0.42 σ |
+
+*(source : `04_apache_bench_diagnostics/feature_diagnostics_apache_bench.csv`)*
+
+Les statistiques KS sont élevées (0.62-0.76) — sur le papier, apache_bench
+semble statistiquement séparable. Mais la colonne « écart moyen » raconte
+une autre histoire : le KS est élevé parce qu'apache_bench forme un
+**cluster très étroit et à faible variance** (requête HTTP quasi identique
+répétée), ce qui crée un saut net dans la CDF empirique — pas parce que ses
+valeurs sortent de la plage normale du trafic benign. Son centre ne se situe
+qu'à **0.4-0.7 écart-type benign** en moyenne, c'est-à-dire **à l'intérieur**
+de la plage normale du trafic benign, pas dans sa queue. L'erreur de
+reconstruction étant une somme d'écarts au carré par rapport à une variété
+apprise sur le benign, un point situé dans la plage normale de la
+distribution d'entraînement se reconstruit proprement, quel que soit
+l'écart de sa CDF par rapport à celle du benign.
+
+À titre de comparaison, les features qui séparent fortement portscan et
+slowloris du benign (`conn_state_SF`, `byte_ratio_scaled`) déplacent leurs
+moyennes de **31 à plus de 1300 écarts-types benign** — un ordre de
+grandeur sans commune mesure avec apache_bench.
+
+### 6.2 Confirmation par l'erreur de reconstruction du VAE
+
+![Distribution de l'erreur de reconstruction du VAE par type](figures/vae_reconstruction_error_hist.png)
+
+*Figure 3 — Distribution de l'erreur de reconstruction (échelle log, moyenne
+sur 20 seeds) pour benign, apache_bench et portscan+slowloris combinés.
+apache_bench chevauche presque entièrement la distribution benign : à peine
+2.6% des flows apache_bench dépassent le seuil moyen `threshold_95` — un
+taux même **inférieur** au taux de faux positifs benign lui-même (4.6%,
+proche du 5% attendu par construction du seuil). portscan+slowloris, à
+l'inverse, en est séparé par plusieurs ordres de grandeur (erreur moyenne ≈
+56 900 contre 0.061 pour benign et 5.75 pour apache_bench, 100% des flows
+au-dessus du seuil).*
+
+![Box plots des features les plus discriminantes pour apache_bench](figures/top_features_apache_bench_boxplots.png)
+
+*Figure 4 — Même constat visuellement : les 8 features les plus
+discriminantes (par KS) montrent un chevauchement massif des boîtes entre
+benign et apache_bench malgré des statistiques KS élevées.*
+
+### 6.3 Hypothèse temporelle : temps inter-arrivée (IAT)
+
+Motivé par le constat de la section 6.1 (apache_bench = requête individuelle
+banale, mais répétée), un test rapide et **sans réentraînement** a été
+conduit sur une seule feature candidate calculée directement à partir de la
+colonne `ts` existante : le temps inter-arrivée (IAT) entre flows
+consécutifs de même label, au sein d'une même fenêtre de capture.
+
+![Temps inter-arrivée : benign vs. apache_bench](figures/iat_apache_bench_vs_benign_hist.png)
+
+*Figure 5 — Distribution du temps inter-arrivée (échelle log). Le médian
+apache_bench (0.00092s) est environ **2364× plus court** que le médian
+benign (2.18s) — statistique KS = 0.710 (p ≈ 0).*
+
+**Ce résultat nuance, plutôt qu'il ne confirme simplement, l'hypothèse.** Le
+KS de l'IAT (0.710) n'est pas supérieur aux meilleures features à un seul
+flow de la section 6.1 (jusqu'à 0.755) — donc l'IAT seul n'est pas
+statistiquement « meilleur » par ce critère. Ce qui diffère radicalement,
+c'est la **taille d'effet** : alors que les features à un seul flow
+déplaçaient apache_bench de moins d'un écart-type benign (section 6.1),
+l'IAT sépare les deux groupes par **~3 ordres de grandeur** — un signal
+d'une nature complètement différente, invisible à un modèle qui ne voit
+qu'un flow à la fois.
+
+**Avertissement explicite : ce test est une vérification de séparabilité
+statistique uniquement — il n'a PAS été validé par un réentraînement.**
+Aucun réentraînement n'a été effectué ; rien ne garantit qu'ajouter cette
+feature (ou une variante — taux de requêtes, concurrence) au VAE et le
+réentraîner ferait effectivement passer l'erreur de reconstruction
+d'apache_bench au-dessus du seuil. Cela nécessiterait un cycle complet
+réentraînement + évaluation, explicitement hors périmètre de ce diagnostic.
+
+*(source complète, incl. tableaux de percentiles : `04_apache_bench_diagnostics/findings.md` et `temporal_iat_summary.csv`)*
+
+---
+
+## 7. Conclusion générale
 
 1. **La métrique binaire `is_attack` masque une faiblesse structurelle
    sévère sur apache_bench** (recall 2.6-3.3% selon le modèle), invisible
@@ -294,14 +392,19 @@ totalement manqué.
 
 ### Pistes pour la suite
 
-- **Feature engineering ciblé sur la signature apache_bench** (requête
-  HTTP fixe de 80 octets, `conn_state=SF`, durée < 1s) : des features
-  actuellement absentes du pipeline (timing inter-requêtes, taux de
-  requêtes par IP source sur une fenêtre glissante, ordre des octets dans
-  la charge utile) pourraient mieux séparer ce trafic du HTTP benign — les
-  18 colonnes actuelles (durée/bytes/pkts agrégés + protocole/service/
-  conn_state one-hot) ne capturent pas la répétitivité qui distingue un
-  benchmark HTTP automatisé d'une requête utilisateur isolée.
+- **Feature engineering ciblé sur la signature apache_bench** — le
+  diagnostic de la section 6 apporte un premier élément de preuve
+  statistique en faveur de cette piste : le temps inter-arrivée entre
+  requêtes apache_bench consécutives est ~2364× plus court que pour le
+  benign (section 6.3), un signal d'une taille d'effet largement supérieure
+  à tout ce qu'offrent les 18 features actuelles. Une feature de type
+  timing inter-requêtes / taux de requêtes par IP source sur une fenêtre
+  glissante / concurrence par destination reste néanmoins **une hypothèse
+  non validée par réentraînement** — la prochaine étape logique est un
+  cycle complet ajout-de-feature + réentraînement + réévaluation pour
+  confirmer qu'elle fait effectivement franchir le seuil de détection à
+  apache_bench, et pas seulement qu'elle sépare statistiquement les deux
+  populations.
 - **Seuil ou modèle spécifique par type d'attaque** (approche ensembliste)
   plutôt qu'un seuil unique global — étant donné que portscan et slowloris
   sont déjà quasi résolus, un second détecteur/seuil dédié à la signature
