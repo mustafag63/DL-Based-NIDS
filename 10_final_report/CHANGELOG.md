@@ -1,5 +1,126 @@
 # CHANGELOG — 10_final_report
 
+## 2026-07-29 — O7: IP-bazlı ground truth tehdit modeli notu rapor ve dokümantasyona eklendi
+
+Denetim bulgusu O7 kod üzerinden doğrulandı: `is_attack` proje genelinde
+yalnızca kaynak IP ile tanımlı (`faz2_feature_extraction.py:134-136` —
+lab-only filtre sonrası `id.orig_h == 192.168.10.2`; `prepare_window10.py`
+aynı kural). Davranışsal sinyal etikete girmiyor; `attack_log.csv` yalnızca
+saldırı tipini post-hoc atıyor (attack flow'ların %100'ü 1 sn toleransla bir
+komut aralığına düşüyor — etiket bu lab'da pratikte temiz). IP model girdisi
+değil (18 feature'da IP yok) — sınırlama etiket tanımında. Hiçbir final
+doküman bu tanımı belirtmiyordu; tehdit modeli notu iki dokümana eklendi
+(yalnızca yeni bölüm): `07_final_written_report/
+rapport_final_attack_type_analysis.md` bölüm 7'ye O4 notunun ardına "Note
+sur le modèle de menace — une vérité terrain définie par l'IP source" ve
+`08_documentation/DOCUMENTATION.md`'ye "### 7.5 Tehdit modeli notu". Mesaj
+üç parçalı: etiket = kaynak kimliği (davranış değil); model "saldırgan
+makinenin istatistiksel imzasını" öğreniyor — spoofing/NAT/karışık
+trafik/yanal hareket senaryolarına genelleme test edilmedi; diğer bulgular
+bu ground truth tanımı altında geçerli, "gerçek dünya deployment" okumaları
+bu notla sınırlanmalı. Her iki PDF yeniden üretildi. Kapsam doğrulaması +
+taslaklar: `06_scripts/o7_ip_based_ground_truth/findings_o7_report_notes.md`.
+
+## 2026-07-29 — O5: train-data confound doğrulandı, karşılaştırma notları rapor ve dokümantasyona eklendi
+
+Denetim bulgusu O5 (VAE-vs-Dense karşılaştırmasında mimari farkı ile eğitim
+verisi farkının karışması) split dosyaları ve script'lerden retrain'siz
+doğrulandı: VAE yalnızca window_10 benign'iyle (train n=3.049, 20 seed,
+rastgele 70/15/15), Dense v1 window_01-08 ile (train n=23.274 — ~7,6 kat,
+5 seed, GroupShuffleSplit) eğitilmiş; window_10'daki icmp/OTH/S0 kategorik
+değerleri Dense'in encoder'ında all-zero kodlanıyor. Scaler confound değil
+(yalnızca Dense train'inde fit edilip iki tarafa uygulanıyor — ortak ölçek);
+audit'in "ölçekleyiciyle confound'lu" ifadesi bu yönüyle nüanslandı.
+Değerlendirme tarafı (aynı test flow'ları, 18 kolon, threshold konvansiyonu)
+özdeş. Bu temelde iki dokümana okuma notu eklendi (yalnızca yeni bölüm):
+`07_final_written_report/rapport_final_attack_type_analysis.md` §5 sonuna
+"Note de lecture — les deux modèles n'ont pas été entraînés sur les mêmes
+données" ve `08_documentation/DOCUMENTATION.md`'ye "### 7.4 Sınırlama notu —
+VAE ve Dense v1 aynı eğitim verisiyle eğitilmedi". Mesaj üç parçalı: ince
+taneli karşılaştırmalar (macro parite 0.674/0.551 vs 0.673/0.540, ROC-AUC
+0.696 vs 0.581 nüansı) mimariye atfedilemez; "aynı şekilde tekrarlandı"
+ifadeleri yalnızca eval protokolünü anlatır; ana bulgu (apache_bench →
+feature-set sınırlaması) zayıflamaz, güçlenir. Her iki PDF yeniden üretildi.
+Bulgular + taslaklar: `06_scripts/o5_train_data_confound/findings_o5_report_notes.md`.
+
+## 2026-07-29 — O4: threshold transfer analizi + sınırlama notları rapor ve dokümantasyona eklendi
+
+Denetim bulgusu O4 (threshold_95'in küçük val-benign setinden kalibrasyonu +
+val→test dağılım-transferi varsayımı) retrain'siz sayısal analizle doğrulandı:
+`06_scripts/o4_threshold_transfer/analyze_threshold_transfer.py` (20 kanonik
+seed, deterministik z_mean). Sonuçlar: kalibrasyon seti n=653; threshold_95
+seed-arası CV %27.9 (aralık 0.043–0.153), tek-seed bootstrap %95 CI ortalama
+genişliği threshold'un ~%60'ı (oynaklığın önemli kısmı küçük-n persentil
+gürültüsü); val threshold'unun test-benign'de gerçekleşen FPR'ı %5.77 ± 0.58
+(nominal %5.00, 18/20 seed'de üstünde — sistematik yönlü sapma), KS ortalama
+0.067 (5/20 seed p<0.01). AUC/PR-AUC threshold'dan bağımsız olduğundan
+etkilenmiyor. Bu temelde iki dokümana sınırlama notu eklendi (yalnızca yeni
+bölüm, mevcut bölümlere dokunulmadı):
+`07_final_written_report/rapport_final_attack_type_analysis.md` bölüm 7'ye
+O1 notunun ardına "Note de prudence — calibration du seuil sur un petit
+ensemble de validation" alt-bölümü ve `08_documentation/DOCUMENTATION.md`'ye
+"### 7.3 Sınırlama notu — threshold_95'in küçük val setinden kalibrasyonu";
+her iki PDF yeniden üretildi. Bulgular + taslaklar:
+`06_scripts/o4_threshold_transfer/findings_o4_report_notes.md`, per-seed
+tablo: `threshold_transfer_per_seed.csv`.
+
+## 2026-07-29 — 07_final_written_report: PDF build scripti kalıcı hale getirildi
+
+O1 notu eklenirken geçici olarak yazılan rapor PDF build scripti,
+`08_documentation/build_pdf.py` konvansiyonuyla `07_final_written_report/build_pdf.py`
+olarak repoya alındı (md → gömülü-görselli HTML → headless Chrome PDF; rapor
+artık tekrarlanabilir şekilde yeniden üretilebilir).
+
+## 2026-07-29 — O1: mimari notu + latent ablation koşusu rapor ve dokümantasyona eklendi
+
+Denetim bulgusu O1 (latent_dim=10 > bottleneck=8 — nominal kapasite fiilen
+mevcut değil) için doğrulama ablation'ı koşuldu:
+`phase3_vae/05_contamination_sweep/12_latent_ablation/` altında latent_dim=8
+(bottleneck ile eşit) varyantı, aynı 20 seed / hiperparametre / split ve
+deterministik z_mean skorlamayla eğitilip kanonik latent=10 ile seed-eşleşmeli
+bootstrap karşılaştırmasına sokuldu. Sonuç: iki varyant pratikte ayırt
+edilemez — tip başına recall birebir aynı (apache_bench 0.0262, portscan
+0.9983, slowloris 1.0000), apache_bench ROC-AUC farkı (+0.035) %95 CI'ında
+sıfırı içeriyor; aktif latent boyut her iki varyantta da nominal genişliğin
+altında (ort. 4.4/8 vs 5.9/10). Orijinal latent=10 modelleri/sonuçlarına
+dokunulmadı. Bu temelde O1 için mimari sınırlama notu iki ana dokümana
+eklendi (yalnızca yeni bölüm eklendi, mevcut bölümlere dokunulmadı):
+`07_final_written_report/rapport_final_attack_type_analysis.md` bölüm 7'ye
+"Note d'architecture — dimension latente nominale vs. effective" alt-bölümü
+ve `08_documentation/DOCUMENTATION.md` §0.2'ye "Mimari not — nominal vs.
+etkin latent boyutu" paragrafı; her iki PDF yeniden üretildi. Taslak +
+bulgular: `12_latent_ablation/findings_o1_report_notes.md`,
+karşılaştırma tabloları: `comparison_latent8_vs_latent10.{csv,md}`.
+
+## 2026-07-29 — 05_notebooks: dört notebook deterministik z_mean skorlamaya geçirildi (O2)
+
+`05_notebooks/` altındaki dört notebook hâlâ eski stokastik skorlama
+dönemindeydi; ana pipeline'a uygulanan O2 düzeltmesiyle hizalandı ve tüm
+hücreler baştan sona yeniden çalıştırıldı (grafik/tablo çıktıları güncel).
+Orijinal versiyonlar `05_notebooks/_stochastic_legacy/` altında.
+
+- **Ortak:** demo VAE backend'leri `single.VAEBackend(..., deterministic=True)`
+  oldu — z = z_mean, eps örneği ve eval seed yok; threshold_95 seed başına
+  val-benign deterministik error'un 95. persentilinden yeniden kalibre
+  (`run_zmean_rescore.py` ile aynı mekanizma, kod `evaluate_by_attack_type.py`
+  içinde zaten mevcuttu). "Published" hücreleri artık stokastik
+  `06_attack_type_analysis/` / `07_segmented_injection/` orijinallerini değil,
+  `10_final_report`'un kanonik deterministik tablolarını okuyor.
+- **01_attack_type_analysis:** demo backend deterministik; published tablolar →
+  `01_single_attack_type/vae/results.csv`, `02_pairwise_attack_type/vae/
+  results.csv` + `results_combined.md` (hibrit dedup metrik notu eklendi).
+- **02_segmented_injection:** `eval_seed_offset=950_000` kalktı (sampling'le
+  birlikte anlamını yitirdi); published çıktılar → `03_segmented_injection/
+  vae/block_recall_f1_per_seed.csv` + `error_plot.png`.
+- **03_dense_v1_comparison:** Dense tarafı zaten deterministikti, dokunulmadı;
+  VAE karşılaştırma sayıları kanonik deterministik `results.csv`'den okunuyor,
+  VAE-vs-Dense grafikleri/makro tablo bu sayılarla yeniden üretildi.
+- **04_apache_bench_diagnostics:** ölü `10_final_deliverables_31_temmuz/
+  06_diagnostics` yolu düzeltildi (scriptler `06_scripts/
+  apache_bench_diagnostics/`, veri `04_apache_bench_diagnostics/`) — notebook
+  bu yüzden hiç çalışmıyordu; demo backend deterministik; markdown
+  `findings.md`'nin güncel median_error anlatımıyla hizalandı.
+
 ## 2026-07-28 — 04_apache_bench_diagnostics: skor-bağımlı çıktılar deterministik z_mean ile yeniden üretildi
 
 `vae_reconstruction_error_hist.png` ve `vae_reconstruction_error_summary.csv`

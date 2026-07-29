@@ -266,7 +266,43 @@ l'autre entre les types d'attaque. Le motif est identique dans les deux
 cas : portscan et slowloris quasi parfaits, apache_bench presque
 totalement manqué.
 
-*(source complète : `08_dense_v1_comparison/comparison_vae_vs_dense.md`)*
+#### Note de lecture — les deux modèles n'ont pas été entraînés sur les mêmes données
+
+Cette comparaison est menée sur **les mêmes flows de test, les mêmes 18
+colonnes et la même convention de seuil** pour les deux modèles — côté
+évaluation, elle est bien à armes égales. Côté **entraînement**, en
+revanche, les deux modèles diffèrent bien au-delà de l'architecture : le
+VAE est entraîné sur le seul benign de window_10 (**3 049 flows** de
+train, 20 seeds, split aléatoire 70/15/15), le Dense v1 sur les windows
+01–08 (**23 274 flows** de train, soit ~7.6× plus, 5 seeds,
+GroupShuffleSplit par signature) ; et window_10 contient des valeurs
+catégorielles (proto = icmp, conn_state OTH/S0) que l'encodeur one-hot —
+ajusté uniquement sur le train du Dense — n'a jamais vues, donc encodées
+en tout-zéro dans les données d'entraînement du VAE. Le scaler lui-même
+n'est pas un facteur de confusion (il est ajusté une seule fois, sur le
+train du Dense, et appliqué aux deux côtés — même échelle partout), mais
+la composition, le volume et la couverture catégorielle des données
+d'entraînement, si.
+
+Conséquence : les comparaisons fines de cette section — la quasi-égalité
+macro (0.674/0.551 vs 0.673/0.540) comme la nuance « meilleur pouvoir de
+discrimination du Dense sur apache_bench » (ROC-AUC 0.696 vs 0.581) — ne
+peuvent pas être attribuées à l'architecture seule : la différence de
+données d'entraînement y contribue de façon indissociable. Les
+formulations du type « répétées à l'identique » (section 5, protocole)
+concernent le protocole d'évaluation, pas les conditions d'entraînement,
+et doivent être lues avec cette note.
+
+La conclusion principale, elle, **n'est pas fragilisée — elle est
+renforcée** : deux architectures différentes, entraînées sur des données
+très différentes (composition de fenêtres, volume ~7.6×, couverture
+catégorielle), échouent sur apache_bench selon le même motif
+(recall ≤ 3.3 %). Le dénominateur commun n'est ni le modèle ni le jeu
+d'entraînement, mais l'espace de features à 18 colonnes — ce qui appuie
+d'autant la lecture « limite du jeu de features » de la section 7.
+
+*(source complète : `08_dense_v1_comparison/comparison_vae_vs_dense.md` ;
+analyse du confound : `10_final_report/06_scripts/o5_train_data_confound/`)*
 
 ---
 
@@ -389,6 +425,96 @@ réentraînement + évaluation, explicitement hors périmètre de ce diagnostic.
    actuel** plutôt qu'un défaut d'un modèle en particulier. Changer
    d'architecture d'autoencodeur ne résoudra probablement pas ce problème
    seul.
+
+### Note d'architecture — dimension latente nominale vs. effective
+
+L'encodeur du VAE (`18 → Dense(16) → Dense(8) → z_mean/z_log_var(10)`)
+donne au code latent une dimension (10) **supérieure à la couche qui
+l'alimente** (8). `z_mean` étant une transformation linéaire d'une
+activation à 8 dimensions, le code latent ne peut porter au plus que 8
+degrés de liberté : « latent = 10 » est une capacité nominale, pas
+effective. Pour vérifier que ce choix inhabituel n'affecte pas les
+conclusions, une ablation dédiée
+(`phase3_vae/05_contamination_sweep/12_latent_ablation/`) a réentraîné les
+20 mêmes seeds avec latent = 8 (= la largeur du bottleneck), tout le reste
+inchangé (β = 0.25, mêmes splits, scoring z_mean déterministe,
+threshold_95 recalibré par seed). Résultat : les deux variantes sont
+**indiscernables** sur les métriques de détection — recall par type
+strictement identique (apache_bench 2.6 %, portscan 99.8 %, slowloris
+100 %) ; ROC-AUC apache_bench 0.702 vs 0.667, soit une différence appariée
+de +0.035 dont l'IC bootstrap à 95 % [−0.014 ; +0.086] inclut zéro
+(variance de seed). Le nombre de dimensions latentes réellement actives
+(std(z_mean) > 0.15) reste inférieur à la largeur nominale dans les deux
+cas (en moyenne 4.4/8 et 5.9/10, très variable selon le seed). La
+dimension latente surdimensionnée est donc une **maladresse architecturale
+sans effet mesurable** sur les résultats rapportés ; elle est notée ici
+comme limite de conception, sans invalider les chiffres du modèle
+canonique (latent = 10).
+
+### Note de prudence — calibration du seuil sur un petit ensemble de validation
+
+Le `threshold_95` de chaque seed est le 95ᵉ percentile de l'erreur de
+reconstruction sur un ensemble val-benign de **653 flows seulement**
+(split de validation de window_10) — soit un ordre statistique estimé à
+partir de la ~33ᵉ plus grande valeur. Deux conséquences quantifiées
+(`10_final_report/06_scripts/o4_threshold_transfer/`, 20 seeds, scoring
+z_mean déterministe, aucun réentraînement) :
+
+**(1) Le seuil est intrinsèquement bruité.** Entre seeds, threshold_95
+varie de 0.043 à 0.153 (moyenne 0.090, **CV 27.9 %**) ; et au sein d'un
+même seed, l'intervalle de confiance bootstrap à 95 % du percentile a une
+largeur moyenne de ~60 % du seuil. Une part importante de la variabilité
+apparente du seuil entre seeds n'est donc pas une différence de modèle,
+mais le bruit d'estimation d'un percentile de queue sur n = 653.
+
+**(2) Le transfert val → test tient à peu près, avec un biais
+systématique.** Appliqué aux flows benign du test (fenêtres différentes de
+celle de calibration), le seuil val donne un FPR réalisé de **5.77 % ±
+0.58 %** contre 5.00 % nominal (18 seeds sur 20 au-dessus de 5 % — un
+écart orienté, pas du bruit) ; le seuil qui donnerait exactement 5 % sur
+le test benign serait en moyenne 8 % plus haut. Le test KS entre les deux
+distributions d'erreur benign (val vs test) est en moyenne de 0.067 —
+un décalage détectable mais de faible ampleur. Sur ces données le
+transfert est donc raisonnable, mais **rien ne garantit que l'écart reste
+aussi faible dans un environnement de déploiement différent** : le seuil
+devrait y être recalibré sur du benign local.
+
+Portée : les métriques indépendantes du seuil (ROC-AUC, PR-AUC) ne sont
+pas concernées ; seul le point de fonctionnement dépendant de
+threshold_95 (recall, F1, FPR) l'est.
+
+### Note sur le modèle de menace — une vérité terrain définie par l'IP source, pas par le comportement
+
+Dans tout le projet, le label `is_attack` est défini par **l'identité de
+la machine source**, pas par le comportement du flow :
+`is_attack = (id.orig_h == 192.168.10.2)`, appliqué après un filtre
+lab-only (origine **et** destination dans les 3 IP du lab). Aucun signal
+comportemental ou de signature n'entre dans ce label ; les logs
+d'orchestration (`attack_log.csv`) ne servent qu'à typer les attaques a
+posteriori — et le fait que 100 % des flows étiquetés attack tombent
+dans un intervalle de commande d'attaque (tolérance 1 s) montre que ce
+label est propre *dans ce laboratoire*. L'IP n'est pas une feature du
+modèle (les 18 colonnes n'en contiennent pas) : la limite est dans la
+**définition** de ce qui compte comme attaque, pas dans les entrées.
+
+Conséquence : ce que les modèles apprennent à séparer est, au sens
+strict, « la signature statistique du trafic émis par la machine
+attaquante » — pas une notion sémantique d'intention malveillante. Les
+scénarios où cette équivalence se brise ne sont pas couverts par
+l'évaluation : attaquant changeant d'adresse ou usurpant une IP
+(spoofing), trafic mixte légitime + malveillant derrière une même
+source (NAT, machine compromise émettant aussi du trafic normal),
+mouvement latéral depuis une machine « de confiance ». La
+généralisation à ces cas n'est ni testée ni garantie.
+
+Cette note ne remet pas en cause les résultats du projet — le sweep de
+contamination, les analyses par type d'attaque et les diagnostics
+apache_bench restent valides **sous cette définition de la vérité
+terrain**. Elle borne en revanche la portée des lectures « déploiement
+réel » : dans un environnement où l'attaquant n'est pas une source
+unique et dédiée, la correspondance label ↔ comportement devrait être
+réétablie (étiquetage par signature/comportement) avant de transposer
+les chiffres rapportés ici.
 
 ### Pistes pour la suite
 

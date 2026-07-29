@@ -1,0 +1,11 @@
+{
+  "contamination_pct": 0,
+  "latent_dim": 8,
+  "seed": 18,
+  "val_benign_n": 653,
+  "epochs_run": 136,
+  "train_time_sec": 8.516934156417847,
+  "final_val_loss": 1.143824815750122,
+  "threshold_95": 0.11764187961816783,
+  "threshold_99": 0.3169780564308172
+}

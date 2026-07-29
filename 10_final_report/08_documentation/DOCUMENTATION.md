@@ -58,6 +58,24 @@ sapma olarak raporlanmıştır. Eğitim verisi: `window_10_0pct` benign havuzund
 70/15/15 oranında ayrılmış train/threshold-val/test split'i (train_pool=3049
 flow), tamamen benign — hiç saldırı etiketi görmeden unsupervised eğitildi.
 
+**Mimari not — nominal vs. etkin latent boyutu (denetim bulgusu O1).**
+VAE encoder'ında latent boyutu (10), kendisini besleyen ara katmandan (8)
+**daha geniştir**. `z_mean` 8-boyutlu bir aktivasyonun lineer dönüşümü
+olduğundan latent kod en fazla 8 serbestlik derecesi taşıyabilir —
+"latent=10" nominal bir kapasitedir, fiilen mevcut değildir. Bu alışılmadık
+seçimin sonuçları etkileyip etkilemediği ayrı bir ablation koşusuyla test
+edildi (`phase3_vae/05_contamination_sweep/12_latent_ablation/`): aynı 20
+seed, aynı hiperparametreler ve split'lerle `latent_dim=8` (bottleneck ile
+eşit) varyantı eğitildi ve deterministik z_mean skorlamayla karşılaştırıldı.
+İki varyant pratikte ayırt edilemez çıktı: tip başına recall birebir aynı
+(apache_bench %2.6, portscan %99.8, slowloris %100); apache_bench
+ROC-AUC farkı (+0.035) bootstrap %95 güven aralığı sıfırı içerdiğinden
+seed varyansından ayrıştırılamıyor. Fiilen kullanılan (aktif) latent boyut
+sayısı her iki varyantta da nominal genişliğin altında kalıyor (ortalama
+4.4/8 ve 5.9/10). Dolayısıyla bu, sonuçları etkilemeyen ama tasarım
+gerekçesi açısından not edilmesi gereken bir **mimari sınırlamadır**;
+raporlardaki latent=10 sayıları geçerliliğini korur.
+
 **Dense autoencoder v1 (`full_features`, 5 seed).** `phase3_dense/04_phase3_models/full_features`
 altında saklı, 18 feature'ın tamamını kullanan Dense autoencoder varyantı,
 5 seed. Bu modelin genel test AUC'si (ayrı, agregat `is_attack` metriği
@@ -786,6 +804,101 @@ vurgulandığı gibi, henüz bir retrain ile doğrulanmamış bir hipotezdir** �
 sıradaki adım, bu tür bir feature'ı (veya birkaçını) ekleyip modeli
 yeniden eğitip yeniden değerlendirerek, apache_bench'in reconstruction
 error'ının gerçekten eşiğin üzerine çıkıp çıkmadığını doğrulamaktır.
+
+### 7.3 Sınırlama notu — threshold_95'in küçük val setinden kalibrasyonu (denetim bulgusu O4)
+
+Her seed'in `threshold_95`'i, yalnızca **653 flow'luk** bir val-benign
+seti (window_10 validation split'i) üzerindeki reconstruction error'ın
+95. persentilidir — yani sıralamada ~33. en büyük değere dayanan bir sıra
+istatistiği. Bunun iki ölçülmüş sonucu var
+(`10_final_report/06_scripts/o4_threshold_transfer/`, 20 seed,
+deterministik z_mean skor, retrain yok):
+
+**(1) Threshold doğası gereği gürültülü.** Seed'ler arasında threshold_95
+0.043 ile 0.153 arasında değişiyor (ortalama 0.090, **CV %27.9**); tek
+seed içinde bile persentil tahmininin bootstrap %95 güven aralığının
+ortalama genişliği threshold'un ~%60'ı. Yani seed'ler arası görünen
+threshold oynaklığının önemli bir kısmı model farkı değil, n=653'ten
+ağır sağ-kuyruklu bir dağılımın kuyruk persentilini tahmin etmenin doğal
+gürültüsüdür.
+
+**(2) Val→test transferi kabaca tutuyor, ama sistematik bir sapmayla.**
+Val'den kalibre edilen threshold, test setinin benign flow'larında
+(kalibrasyon window'undan farklı window'lar) nominal %5.00 yerine
+ortalama **%5.77 ± 0.58** FPR gerçekleştiriyor (20 seed'in 18'inde >%5 —
+yönlü bir sapma, gürültü değil); test-benign'de tam %5 verecek threshold
+ortalama %8 daha yüksek olurdu. İki benign error dağılımı arasındaki KS
+istatistiği ortalama 0.067 — saptanabilir ama küçük bir kayma. Bu veri
+setinde transfer makul çalışıyor; ancak **farklı bir deployment
+ortamında sapmanın bu kadar küçük kalacağının garantisi yoktur** —
+orada threshold yerel benign trafikten yeniden kalibre edilmelidir.
+
+Kapsam: threshold'dan bağımsız metrikler (ROC-AUC, PR-AUC) bu bulgudan
+etkilenmez; etkilenen yalnızca threshold_95'e bağlı çalışma noktası
+metrikleridir (recall, F1, benign FPR).
+
+### 7.4 Sınırlama notu — VAE ve Dense v1 aynı eğitim verisiyle eğitilmedi (denetim bulgusu O5)
+
+Bölüm 5'teki karşılaştırma, **aynı test flow'ları, aynı 18 kolon ve aynı
+threshold konvansiyonuyla** yapılıyor — değerlendirme tarafı elma-elma.
+Ancak **eğitim tarafında** iki model mimariden çok daha fazlasıyla
+ayrışıyor: VAE yalnızca window_10'un benign'iyle eğitildi (**3.049**
+train flow'u, 20 seed, rastgele 70/15/15 split), Dense v1 ise window_01-08
+ile (**23.274** train flow'u — ~7,6 kat fazla, 5 seed, signature bazlı
+GroupShuffleSplit). Ayrıca window_10'da Dense'in one-hot encoder'ının
+(yalnızca Dense'in train'inde fit edilmiştir) hiç görmediği kategorik
+değerler var (`proto=icmp`, `conn_state ∈ {OTH, S0}`) — bu flow'lar
+VAE'nin eğitim verisinde all-zero kodlanmıştır, kategorik sinyalleri
+kayıptır. Scaler'ın kendisi bir confound değildir (tek sefer, Dense'in
+train'inde fit edilip iki tarafa da uygulanır — ortak ölçek); confound
+eğitim verisinin kompozisyonu, hacmi ve kategori kapsamıdır.
+
+Sonuç olarak bölüm 5'teki ince taneli karşılaştırmalar — macro
+neredeyse-eşitlik (0.674/0.551 vs 0.673/0.540) ve "Dense'in apache_bench
+üzerinde ham ayrım gücü biraz daha iyi" nüansı (ROC-AUC 0.696 vs 0.581) —
+tek başına mimariye atfedilemez: eğitim verisi farkı bu sayılara
+ayrıştırılamaz biçimde karışır. "3 analiz aynı şekilde tekrarlandı"
+tarzı ifadeler değerlendirme protokolünü anlatır, eğitim koşullarını
+değil — bu notla birlikte okunmalıdır.
+
+Ana bulgu ise bu confound'dan **zayıflamaz, güçlenir**: iki farklı
+mimari, çok farklı eğitim verileriyle (window kompozisyonu, ~7,6 kat
+hacim, kategori kapsamı) apache_bench üzerinde aynı deseni veriyor
+(recall ≤ %3,3). Ortak payda ne model ne eğitim seti — 18 kolonluk
+feature uzayı; bu da bölüm 7.1'deki "feature-set sınırlaması" çıkarımını
+daha da destekler. (Analiz: `10_final_report/06_scripts/o5_train_data_confound/`.)
+
+### 7.5 Tehdit modeli notu — ground truth davranışa değil kaynak IP'ye dayanır (denetim bulgusu O7)
+
+Proje genelinde `is_attack` etiketi flow'un **davranışıyla değil, kaynak
+makinenin kimliğiyle** tanımlıdır: lab-only filtresinin (kaynak **ve**
+hedef, 3 IP'lik lab kümesinde) ardından
+`is_attack = (id.orig_h == 192.168.10.2)`. Etikete hiçbir davranışsal
+veya imza bazlı sinyal girmez; orkestrasyon logları (`attack_log.csv`)
+yalnızca saldırı **tipini** sonradan atamak için kullanılır — attack
+etiketli flow'ların %100'ünün 1 sn toleransla bir saldırı komut
+aralığına düşmesi, etiketin *bu lab kurulumunda* pratikte temiz
+olduğunu gösterir. IP bir model girdisi değildir (18 feature kolonunda
+IP yoktur): sınırlama feature'larda değil, "neyin saldırı sayıldığı"
+tanımındadır.
+
+Bunun sonucu: modellerin ayırmayı öğrendiği şey, katı anlamda
+"saldırgan makineden çıkan trafiğin istatistiksel imzası"dır —
+semantik bir "kötücül davranış" kavramı değil. Bu eşdeğerliğin bozulduğu
+senaryolar değerlendirmenin kapsamı dışındadır: saldırganın IP
+değiştirmesi veya IP sahteciliği (spoofing), aynı kaynağın arkasında
+meşru + kötücül karışık trafik (NAT, ele geçirilmiş ama normal trafik
+de üreten bir makine), "güvenilir" bir makineden yanal hareket. Bu
+durumlara genelleme test edilmemiştir ve garanti edilemez.
+
+Bu not projenin diğer bulgularını geçersiz kılmaz — contamination
+sweep, attack-type analizleri ve apache_bench tanıları **bu ground
+truth tanımı altında** geçerlidir. Ancak "gerçek dünya deployment"
+okumalarının kapsamını sınırlar: saldırganın tek ve adanmış bir kaynak
+olmadığı bir ortamda, buradaki sayıları taşımadan önce etiket ↔
+davranış eşleşmesinin (imza/davranış bazlı etiketlemeyle) yeniden
+kurulması gerekir. (Kapsam doğrulaması:
+`10_final_report/06_scripts/o7_ip_based_ground_truth/`.)
 
 ---
 
