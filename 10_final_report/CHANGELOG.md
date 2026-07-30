@@ -1,5 +1,32 @@
 # CHANGELOG — 10_final_report
 
+## 2026-07-30 — 04_model_notebooks_results/ eklendi: notebook grafik/sonuç çıktıları
+
+Yeni klasör `04_model_notebooks_results/`, `04_model_notebooks/dense_v1.ipynb`
+ve `vae_v1.ipynb`'nin (v1, 18 feature) sonuç hücrelerinde üretilen grafikleri
+PNG olarak ve sayısal çıktılarını `results.md` olarak dışa aktarıyor —
+notebook dosyalarının kendisi kopyalanmadı, `01_single_attack_type/` vb. ile
+aynı klasör mantığı (model klasörü + PNG'ler + `results.md`) izlendi.
+`dense_v1/` 4 PNG (demo loss eğrisi, reconstruction error histogramı, ROC
+eğrisi, full_features/no_conn_state ablation) + 5-seed sonuç tabloları
+içeriyor; `vae_v1/` 3 PNG (KL collapse kontrolü, test ROC+histogram, beta/KL-
+annealing varyant karşılaştırması) + latent-dim sweep ve beta seçim
+sonuçlarını içeriyor. Notlandı: VAE notebook'u final rapordaki 5-seed
+`contam_0pct` kanonik değerlendirmeyle aynı çalıştırma değil, bir mimari
+seçim (health-check) notebook'u — bkz. `04_model_notebooks_results/README.md`.
+
+## 2026-07-30 — 04_model_notebooks/ eklendi: v1 model eğitim notebook'ları
+
+Yeni klasör `04_model_notebooks/`, `phase3_dense/` ve `phase3_vae/`
+altındaki orijinal eğitim notebook'larının çalıştırılmış (output dolu)
+kopyalarını barındırıyor: `dense_v1.ipynb` (Dense autoencoder, 18 feature)
+ve `vae_v1.ipynb` (VAE, 18 feature). Orijinal dosyalar kendi yerlerinde
+değişmeden kaldı, sadece kopyalandı. v2 (19-feature, `concurrency_src_1s`
+dahil) için karşılık gelen notebook üretilmedi — v2 sonuçları sadece script
+olarak var (`09_dense_v2_comparison/`, `10_vae_v2_comparison/`), bu yüzden
+`dense_v2.ipynb`/`vae_v2.ipynb` bu klasörde yok; ayrıntı için
+`04_model_notebooks/README.md`.
+
 ## 2026-07-30 — 08_documentation/ yenilendi: eski dosyalar arşivlendi, iki yeni Türkçe PDF (v2 sonuçlarına göre)
 
 Eski `DOCUMENTATION.md/html/pdf` ve `METRIKLER_ACIKLAMA.md/pdf` (28 Temmuz
