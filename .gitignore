@@ -11,3 +11,27 @@ __pycache__/
 
 # Phase 3 VAE: raw per-run output, not the approved final model
 phase3_vae/04_phase3_models/latest_run/
+
+# Large regeneratable feature/derived-data tables (rebuild via
+# 02_phase2_feature_extraction/ and the relevant experiment's build
+# script) -- NOT split-index / results_*.csv files, those stay tracked.
+# Added 2026-07-30 after the concurrency_src_1s rollout (see
+# 10_final_report/CHANGELOG.md) to keep future regenerated tables out of
+# the repo; files matching these patterns already committed before this
+# date are unaffected (.gitignore is forward-looking only).
+**/features_all_windows.csv
+**/features_v2_all_rows.csv
+**/concurrency_features_all_rows.csv
+**/iat_feature_all_rows.csv
+**/by_window/*.csv
+experiments/v2_ip_aggregation_rejected/**/*.csv
+*.parquet
+
+# Raw dataset safety net -- already lives outside this repo, at ../data/
+ids-dataset-raw*/
+ids-dataset-features/
+
+# V1_ARCHIVE/ (2026-07-30 v1->v2 rollout archive, 18M as of this date) --
+# forward-looking only: already-committed contents stay in git history,
+# this just stops NEW files added under V1_ARCHIVE/ from being tracked.
+V1_ARCHIVE/
