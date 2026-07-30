@@ -1,0 +1,14 @@
+{
+  "n_rows": 46495,
+  "new_feature": "concurrency_src_1s_scaled",
+  "formula": "log1p(count of same-source-IP flows within |dt|<=1s, same window_id, excl. self)",
+  "provenance": "promoted from 14_concurrency_feature_experiment/ Config A (apache_bench recall 0.0262 -> 0.9135, benign FPR +0.0026, knock-out confirmed)",
+  "scaler": {
+    "fit_on": "phase3_dense train split (all benign)",
+    "n_fit_rows": 23274,
+    "mean_log": 2.0864962884954803,
+    "std_log": 0.6023503882972578
+  },
+  "note": "no hardcoded attacker/benign IP value used in the feature math; ATTACKER_IP only used to verify alignment against the combined table's is_attack column.",
+  "original_18_features": "copied verbatim from features_all_windows.csv + the two resampled by_window feature CSVs, unchanged."
+}

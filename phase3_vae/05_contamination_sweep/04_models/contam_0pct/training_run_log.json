@@ -1,0 +1,57 @@
+[
+  {
+    "contamination_pct": 0,
+    "seed": 0,
+    "val_benign_n": 653,
+    "epochs_run": 200,
+    "train_time_sec": 12.935113191604614,
+    "final_val_loss": 1.6276354789733887,
+    "note": "threshold_95/99 here are STOCHASTIC-scoring thresholds (kept for parity with v1's file format); evaluation uses deterministic z_mean scoring with a separately recalibrated threshold_95, per O2 -- see vae_backend_v2.py.",
+    "threshold_95": 0.10572341829538343,
+    "threshold_99": 0.2851099359989167
+  },
+  {
+    "contamination_pct": 0,
+    "seed": 1,
+    "val_benign_n": 653,
+    "epochs_run": 90,
+    "train_time_sec": 6.279557228088379,
+    "final_val_loss": 2.1570451259613037,
+    "note": "threshold_95/99 here are STOCHASTIC-scoring thresholds (kept for parity with v1's file format); evaluation uses deterministic z_mean scoring with a separately recalibrated threshold_95, per O2 -- see vae_backend_v2.py.",
+    "threshold_95": 0.11146395355463028,
+    "threshold_99": 0.3438867354393008
+  },
+  {
+    "contamination_pct": 0,
+    "seed": 2,
+    "val_benign_n": 653,
+    "epochs_run": 169,
+    "train_time_sec": 10.885795831680298,
+    "final_val_loss": 1.6643650531768799,
+    "note": "threshold_95/99 here are STOCHASTIC-scoring thresholds (kept for parity with v1's file format); evaluation uses deterministic z_mean scoring with a separately recalibrated threshold_95, per O2 -- see vae_backend_v2.py.",
+    "threshold_95": 0.1445634722709652,
+    "threshold_99": 0.4402374839782716
+  },
+  {
+    "contamination_pct": 0,
+    "seed": 3,
+    "val_benign_n": 653,
+    "epochs_run": 121,
+    "train_time_sec": 8.11343002319336,
+    "final_val_loss": 1.9079173803329468,
+    "note": "threshold_95/99 here are STOCHASTIC-scoring thresholds (kept for parity with v1's file format); evaluation uses deterministic z_mean scoring with a separately recalibrated threshold_95, per O2 -- see vae_backend_v2.py.",
+    "threshold_95": 0.11995034068822841,
+    "threshold_99": 0.2939298641681672
+  },
+  {
+    "contamination_pct": 0,
+    "seed": 4,
+    "val_benign_n": 653,
+    "epochs_run": 117,
+    "train_time_sec": 8.134971857070923,
+    "final_val_loss": 2.006578207015991,
+    "note": "threshold_95/99 here are STOCHASTIC-scoring thresholds (kept for parity with v1's file format); evaluation uses deterministic z_mean scoring with a separately recalibrated threshold_95, per O2 -- see vae_backend_v2.py.",
+    "threshold_95": 0.18329005539417265,
+    "threshold_99": 0.3610987234115603
+  }
+]

@@ -1,541 +1,321 @@
-# Analyse par type d'attaque — VAE clean-only vs Dense autoencoder v1
+# Attack-Type Analysis — VAE and Dense Autoencoder, Canonical Model (19 Features)
 
-*Rapport technique — préparé pour Gérard*
+*Technical report — prepared for Gérard*
 
-*Périmètre : `06_attack_type_analysis/`, `07_segmented_injection/`, `08_dense_v1_comparison/`*
+*Scope: `06_attack_type_analysis/`, `11_pairwise_segmented_v2/`, `09_dense_v2_comparison/`, `10_vae_v2_comparison/`, `14_concurrency_feature_experiment/`*
 
-## 1. Contexte et objectifs
+## 1. Context and Objectives
 
-Le suivi de vendredi a identifié 4 tâches, toutes en **inference-only**
-(aucun réentraînement de modèle) sur les modèles déjà entraînés
-(VAE clean-only `contam_0pct`, 20 seeds ; Dense autoencoder v1
-`full_features`, 5 seeds) :
+This report documents the current canonical anomaly-detection pipeline: a
+VAE and a Dense autoencoder, both trained on **19 modeling features** — the
+original 18 (packet/byte/duration statistics, protocol/service/conn-state
+one-hots) plus one new feature, `concurrency_src_1s`, added on 2026-07-30
+after an investigation into why one attack type was being missed. There is
+no v1/v2 split in this report: every number below is the current model.
+The prior 18-feature results are archived in full at `V1_ARCHIVE/` for
+anyone who needs the before/after comparison; this document reports the
+current state directly.
 
-1. **Dériver un label attack_type** (portscan / apache_bench / slowloris)
-   par flow dans le test set, alors que le pipeline ne produisait jusqu'ici
-   qu'un label binaire `is_attack`, et **casser la métrique binaire agrégée**
-   en performance par type d'attaque individuel.
-2. Étendre cette analyse aux **combinaisons par paires** de types d'attaque,
-   pour vérifier si un type mal détecté (apache_bench) devient plus facile
-   à détecter quand il partage l'ensemble d'évaluation avec un type bien
-   détecté.
-3. Construire une **expérience d'injection segmentée** : au lieu du test set
-   mélangé habituel, réordonner les mêmes flows en blocs contigus par type
-   d'attaque (benign → apache_bench → benign → slowloris → benign →
-   portscan → benign), pour visualiser le score de reconstruction en
-   fonction de la position dans le flux et vérifier si le comportement du
-   modèle change à la frontière d'un bloc.
-4. **Répéter les 3 analyses précédentes avec le Dense autoencoder v1**
-   (au lieu du VAE) pour déterminer si la faiblesse observée sur
-   apache_bench est spécifique à l'architecture VAE ou si elle est partagée.
+Three evaluation protocols are used throughout, identical for both models:
 
-Aucune des données originales (`test_with_attack_type.csv`,
-`segmented_sequence.csv`, modèles `.keras`) n'a été modifiée entre les
-étapes — chaque script réutilise les fonctions du script précédent
-(`evaluate_group()`, `assemble_labeled_features_df()`,
-`compute_error_matrix()`, `run_segmented_evaluation()`) via un objet
-`backend` paramétrable (VAE ou Dense), sans dupliquer la logique de
-chargement de modèle / seuil / calcul de métriques.
+1. **Single attack-type**: each attack type evaluated against the full
+   benign test pool, the other two types excluded from that run.
+2. **Pairwise**: each of the 3 attack-type pairs evaluated against benign,
+   the third type excluded — includes a *decomposed* (per-constituent-type)
+   recall to separate "recall moves because the mix changed" from "recall
+   moves because the model's behavior on that type changed."
+3. **Segmented (contiguous-block) injection**: the same test flows,
+   reordered into one stream — benign → apache_bench → benign → slowloris →
+   benign → portscan → benign — to check whether contiguous placement
+   (vs. shuffled) changes per-flow outcomes.
 
-**Dérivation du label attack_type.** `test_with_attack_type.csv` est
-construit par jointure entre `03_phase3_splits/test_indices.csv` et les
-logs d'orchestration (`ground_truth/attack_log.csv`, un log cumulatif par
-fenêtre de capture, filtré à l'intervalle propre de chaque fenêtre) sur la
-clé `(window_id, ts)`. Pour les fenêtres rééchantillonnées
-(`window_resampled_15pct/20pct`, ~31% des flows d'attaque du test set), qui
-n'ont pas leur propre `attack_log.csv` mais conservent le `ts` d'origine du
-flow source, la correspondance est faite **globalement** sur `ts` (tolérance
-1s) plutôt que par `window_id` — les fenêtres réelles ne se chevauchant
-jamais dans le temps, cette approche résout correctement 100% des 3110 flows
-d'attaque du test set (taux de correspondance vérifié).
+`threshold_95` (95th percentile of reconstruction error on held-out
+benign-only validation flows, recalibrated per seed) is the operating
+point for recall/F1/FPR throughout. VAE scoring is **deterministic**
+(z = z_mean, no reparameterization noise — see the Methodology Note).
 
 ---
 
-## 2. Performance par type d'attaque (analyse individuelle)
+## 2. VAE Model Results
 
-**Protocole.** Pour chaque type d'attaque, l'ensemble d'évaluation est :
-tous les flows benign du test set + uniquement les flows de ce type
-(les 2 autres types sont exclus de cette exécution). Seuil = `threshold_95`
-(95ᵉ percentile de l'erreur de reconstruction sur les flows benign de
-validation), calculé par seed. Moyenne ± écart-type sur 20 seeds (VAE).
+Model: `phase3_vae/05_contamination_sweep/04_models/contam_0pct`, 5 seeds,
+19 features, deterministic z_mean scoring.
+
+### 2.1 Single attack-type
 
 | attack_type | n_attack | ROC-AUC | PR-AUC | F1 (thr95) | Benign FPR (thr95) | Attack Recall (thr95) |
 |---|---|---|---|---|---|---|
-| apache_bench | 1487 | 0.5815 ± 0.0768 | 0.2133 ± 0.0219 | 0.0507 ± 0.0081 | 0.0565 ± 0.0059 | **0.0328 ± 0.0055** |
-| portscan | 694 | 0.9982 ± 0.0005 | 0.9886 ± 0.0023 | 0.7737 ± 0.0161 | 0.0578 ± 0.0056 | 0.9889 ± 0.0138 |
-| slowloris | 929 | 1.0000 ± 0.0000 | 1.0000 ± 0.0000 | 0.8271 ± 0.0158 | 0.0570 ± 0.0062 | 1.0000 ± 0.0000 |
+| apache_bench | 1487 | 0.9836 ± 0.0123 | 0.9035 ± 0.0805 | 0.8428 ± 0.0337 | 0.0664 ± 0.0110 | **0.9500 ± 0.0453** |
+| portscan | 694 | 0.9998 ± 0.0001 | 0.9983 | 0.7551 | 0.0664 ± 0.0110 | 1.0000 ± 0.0000 |
+| slowloris | 929 | 1.0000 ± 0.0000 | 1.0000 | 0.8048 | 0.0664 ± 0.0110 | 1.0000 ± 0.0000 |
 
-*(source : `06_attack_type_analysis/results_single_attack_type.csv/.md`)*
+*(source: `10_vae_v2_comparison/results_single_attack_type_vae_v2.csv/.md`)*
 
-### Constat principal
+### 2.2 Pairwise combinations
 
-**apache_bench n'est quasiment jamais détecté** : recall = 3.3%, F1 = 0.051,
-ROC-AUC = 0.58 (à peine mieux que le hasard). À l'inverse, portscan et
-slowloris sont détectés quasi parfaitement (recall ≥ 0.99, ROC-AUC ≥ 0.998).
-
-### Pourquoi la métrique binaire agrégée masque ce problème
-
-Le test set contient 1487 flows apache_bench, 694 portscan et 929 slowloris
-— soit apache_bench = 47.8% des flows d'attaque, mais la métrique binaire
-`is_attack` habituelle (recall/F1 agrégé, voir par ex. les métriques Phase 3
-existantes) mélange les 3 types dans un seul chiffre. Comme portscan et
-slowloris sont détectés à ~99-100%, ils tirent la moyenne globale vers le
-haut : un recall binaire global proche de 65-70% (cohérent avec les
-résultats historiques du contamination sweep, voir
-`phase3_vae/05_contamination_sweep/README.md`) peut coexister avec un type
-d'attaque presque totalement manqué. Sans décomposition par attack_type,
-cette faiblesse structurelle n'apparaît dans aucun rapport agrégé — d'où
-l'intérêt de cette analyse.
-
-**Cause probable (feature-level).** apache_bench (`ab.exe`, requête HTTP
-fixe de 80 octets, `conn_state=SF`, durée < 1s) produit un flow qui
-ressemble, dans l'espace des 18 colonnes de features actuelles, à du trafic
-HTTP benign ordinaire — contrairement à portscan (ports non-HTTP,
-`conn_state` distinctif) et slowloris (connexion maintenue ouverte
-30s+, `conn_state=RSTO/S1`), qui ont une signature bien plus éloignée du
-comportement benign appris par les deux autoencodeurs.
-
----
-
-## 3. Performance par paires de types d'attaque
-
-**Protocole.** Pour chaque paire, l'ensemble d'évaluation est : tous les
-flows benign + les flows des 2 types de la paire (le 3ᵉ type est exclu).
-Mêmes modèle/seuil que la section 2.
-
-| Paire | n_attack | ROC-AUC | PR-AUC | F1 (thr95) | Recall poolé (thr95) |
+| Pair | n_attack | ROC-AUC | PR-AUC | F1 (thr95) | Pooled Recall (thr95) |
 |---|---|---|---|---|---|
-| portscan + apache_bench | 2181 | 0.7135 ± 0.0527 | 0.5598 ± 0.0232 | 0.4447 ± 0.0070 | 0.3369 ± 0.0061 |
-| portscan + slowloris | 1623 | 0.9993 ± 0.0002 | 0.9975 ± 0.0007 | 0.8905 ± 0.0105 | 0.9953 ± 0.0057 |
-| apache_bench + slowloris | 2416 | 0.7427 ± 0.0474 | 0.6283 ± 0.0219 | 0.5170 ± 0.0054 | 0.4044 ± 0.0029 |
+| portscan + apache_bench | 2181 | 0.9887 ± 0.0084 | 0.9641 | 0.8888 | 0.9659 ± 0.0309 |
+| portscan + slowloris | 1623 | 0.9999 ± 0.0000 | 0.9997 | 0.8779 | 1.0000 ± 0.0000 |
+| apache_bench + slowloris | 2416 | 0.9899 ± 0.0076 | 0.9715 | 0.8989 | 0.9692 ± 0.0279 |
 
-*(source : `06_attack_type_analysis/results_pairwise_attack_type.csv/.md`)*
+**Decomposed apache_bench-only recall** (the same per-flow flag decision,
+isolated to apache_bench flows regardless of what else is in the eval set):
+solo = 0.9500 ± 0.0453; paired with portscan = 0.9500 ± 0.0453; paired with
+slowloris = 0.9500 ± 0.0453 — **identical up to seed noise in all three
+settings**, confirming the pooled-recall increase in the table above is a
+mixing artifact (adding well-detected portscan/slowloris flows pulls the
+pooled number up), not an actual change in how apache_bench is detected.
 
-### Recall poolé vs. recall décomposé — une distinction essentielle
+*(source: `11_pairwise_segmented_v2/vae/results.md`)*
 
-Le recall "poolé" ci-dessus mélange les 2 types de la paire : il **augmente
-mécaniquement** dès qu'un type bien détecté (portscan ou slowloris) est
-ajouté à apache_bench, même si le comportement du modèle sur les flows
-apache_bench eux-mêmes ne change pas. Le seuil et le modèle étant fixes, la
-décision de flagger un flow ne dépend jamais des autres flows présents dans
-le set d'évaluation — c'est une propriété structurelle des deux
-autoencodeurs testés (décision statique par flow, sans mémoire de
-séquence).
+### 2.3 Segmented (contiguous-block) injection
 
-Pour vérifier cela empiriquement, le recall a été **décomposé par
-sous-type** à l'intérieur de chaque paire :
+![VAE reconstruction error across the segmented-injection stream](figures/segmented_injection_error_plot_vae.png)
 
-| Ensemble d'évaluation | Recall poolé (paire) | Recall apache_bench seul (décomposé) |
-|---|---|---|
-| apache_bench (solo) | — | 0.0328 ± 0.0055 |
-| portscan + apache_bench (paire) | 0.3369 ± 0.0061 | 0.0324 ± 0.0050 |
-| apache_bench + slowloris (paire) | 0.4044 ± 0.0029 | 0.0322 ± 0.0048 |
+*Figure 1 — Reconstruction error (log scale, mean of 5 seeds) vs. stream
+position. Dashed vertical lines mark segment boundaries; the dotted
+horizontal line is the mean threshold_95 (0.0987). All three attack blocks
+now sit visibly above the benign band.*
 
-*(source : `06_attack_type_analysis/results_combined.md`)*
-
-**Confirmation empirique : le recall d'apache_bench ne change pas
-(0.0322-0.0328, à l'intérieur du bruit de seed) qu'il soit évalué seul ou
-en présence d'un autre type.** La hausse apparente du recall "poolé" à
-33-40% est un artefact du mélange, pas une amélioration réelle de la
-détection d'apache_bench — ce point est explicité pour éviter toute
-conclusion erronée du type « le pairing améliore la détection
-d'apache_bench ».
-
----
-
-## 4. Expérience d'injection segmentée (blocs contigus)
-
-**Protocole.** Les mêmes flows de `test_with_attack_type.csv` (aucune
-donnée synthétique, aucun rééchantillonnage avec remplacement) sont
-réordonnés en un flux unique : le pool benign est divisé en 4 segments
-quasi égaux, avec un bloc d'attaque contigu inséré entre chaque paire de
-segments benign, dans l'ordre configurable
-`apache_bench → slowloris → portscan`
-(`07_segmented_injection/build_segmented_injection.py`, ordre
-paramétrable via `--order`).
-
-![Erreur de reconstruction du VAE clean-only le long du flux segmenté](figures/segmented_injection_error_plot.png)
-
-*Figure 1 — Erreur de reconstruction (échelle log, moyenne sur 20 seeds) en
-fonction de la position dans le flux segmenté. Les lignes verticales
-marquent les frontières de segment ; la ligne pointillée horizontale est le
-`threshold_95` moyen. Le bloc apache_bench reste visuellement au niveau
-benign, alors que slowloris et portscan sautent immédiatement au-dessus du
-seuil.*
-
-| Segment | n | Benign FPR (thr95) | Attack Recall (thr95) | F1 (thr95) | Recall test set mélangé (réf.) |
+| Segment | n | Benign FPR (thr95) | Attack Recall (thr95) | F1 (thr95) | Recall in shuffled test (ref.) |
 |---|---|---|---|---|---|
-| benign (seg. 0) | 1705 | 0.0305 ± 0.0070 | — | — | — |
-| apache_bench | 1487 | — | 0.0322 ± 0.0044 | 0.0623 ± 0.0083 | 0.0328 ± 0.0055 |
-| benign (seg. 2) | 1705 | 0.0336 ± 0.0078 | — | — | — |
+| benign (seg. 0) | 1705 | 0.0386 ± 0.0166 | — | — | — |
+| apache_bench | 1487 | — | 0.9500 ± 0.0453 | 0.9739 ± 0.0242 | 0.9500 ± 0.0453 |
+| benign (seg. 2) | 1705 | 0.0490 ± 0.0191 | — | — | — |
 | slowloris | 929 | — | 1.0000 ± 0.0000 | 1.0000 ± 0.0000 | 1.0000 ± 0.0000 |
-| benign (seg. 4) | 1705 | 0.0962 ± 0.0222 | — | — | — |
-| portscan | 694 | — | 0.9882 ± 0.0148 | 0.9940 ± 0.0075 | 0.9889 ± 0.0138 |
-| benign (seg. 6) | 1706 | 0.0696 ± 0.0088 | — | — | — |
+| benign (seg. 4) | 1705 | 0.0967 ± 0.0097 | — | — | — |
+| portscan | 694 | — | 1.0000 ± 0.0000 | 1.0000 ± 0.0000 | 1.0000 ± 0.0000 |
+| benign (seg. 6) | 1706 | 0.0811 ± 0.0117 | — | — | — |
 
-*(source : `07_segmented_injection/results_segmented.md`, threshold_95 moyen
-= 0.1246)*
+Block recall matches the shuffled-test-set number exactly for every type —
+consistent with a static per-flow threshold decision with no sequence
+memory. Benign FPR ranges 0.0386–0.0967 across the 4 gaps (a modest-n
+sampling spread around the pooled 0.0664 average, not a drift effect).
 
-### Confirmation : comportement statique, indépendant de l'ordre
-
-Les recalls par bloc (0.0322 / 1.0000 / 0.9882) sont **quasi identiques**
-aux recalls du test set mélangé (0.0328 / 1.0000 / 0.9889) — la
-différence est du même ordre que le bruit de seed. Ceci confirme
-empiriquement que le VAE (comme le Dense autoencoder, voir section 5) est
-un détecteur **statique par flow, sans état ni mémoire de séquence** :
-qu'une attaque arrive isolée, mélangée à d'autres types, ou en bloc
-contigu ne change rien à la décision prise sur un flow donné.
-
-### Note de prudence — fluctuation du Benign FPR entre segments
-
-Le FPR benign varie de **3.05% à 9.62%** selon le segment (vs. 5.75% en
-moyenne sur tout le pool benign en un seul bloc). Il serait tentant d'y
-lire un effet de "dérive" du modèle au fil du flux, mais **ce n'est
-probablement qu'un artefact d'échantillonnage** : chaque segment ne
-contient que ~1700 flows, une taille d'échantillon modeste pour un FPR
-attendu autour de 5-6% (l'intervalle de confiance à cette taille couvre
-largement l'écart observé). Le modèle n'a aucun état porté d'un flow à
-l'autre, donc aucun mécanisme plausible de dérive n'existe ici — cette
-fluctuation ne doit pas être interprétée sans un rejeu à plus grand n
-(segments plus larges, plus de seeds) pour la confirmer ou l'infirmer.
+*(source: `11_pairwise_segmented_v2/vae/block_recall_f1.md`)*
 
 ---
 
-## 5. Comparaison VAE vs Dense autoencoder v1
+## 3. Dense Model Results
 
-**Protocole.** Les 3 analyses précédentes ont été répétées à l'identique
-(mêmes flows, mêmes 18 colonnes de features, même convention
-`threshold_95`) sur `phase3_dense/04_phase3_models/full_features`
-(5 seeds). Le Dense v1 n'ayant pas de fichier `threshold.json` sauvegardé
-par seed, le seuil est recalculé à la volée comme le 95ᵉ percentile de
-l'erreur de reconstruction sur les flows benign de validation de
-`phase3_dense/03_phase3_splits` — convention reprise telle quelle de
-`analysis/attack_type_breakdown_evaluation.py`. Le Dense v1 consomme les
-mêmes colonnes `_scaled` que le VAE, sans scaler distinct (confirmé : les
-`row_index` de ses propres splits pointent tous dans
-`features_all_windows.csv`, sans offset vers les fenêtres
-rééchantillonnées).
+Model: `phase3_dense/04_phase3_models/full_features`, 5 seeds, 19 features.
 
-### Performance individuelle par type
+### 3.1 Single attack-type
 
-| attack_type | Modèle | ROC-AUC | PR-AUC | F1 (thr95) | Attack Recall (thr95) |
+| attack_type | n_attack | ROC-AUC | PR-AUC | F1 (thr95) | Benign FPR (thr95) | Attack Recall (thr95) |
+|---|---|---|---|---|---|---|
+| apache_bench | 1487 | 0.9808 ± 0.0076 | 0.8930 | 0.8218 | 0.0660 ± 0.0036 | **0.9092 ± 0.0382** |
+| portscan | 694 | 0.9997 ± 0.0002 | 0.9973 | 0.7551 | 0.0660 ± 0.0036 | 1.0000 ± 0.0000 |
+| slowloris | 929 | 1.0000 ± 0.0000 | 1.0000 | 0.8050 | 0.0660 ± 0.0036 | 1.0000 ± 0.0000 |
+
+*(source: `09_dense_v2_comparison/results_single_attack_type_dense_v2.csv/.md`)*
+
+### 3.2 Pairwise combinations
+
+| Pair | n_attack | ROC-AUC | PR-AUC | F1 (thr95) | Pooled Recall (thr95) |
 |---|---|---|---|---|---|
-| apache_bench | VAE | 0.5815 ± 0.0768 | 0.2133 ± 0.0219 | 0.0507 ± 0.0081 | **0.0328 ± 0.0055** |
-| apache_bench | Dense v1 | 0.6957 ± 0.0791 | 0.2704 ± 0.0406 | 0.0401 ± 0.0003 | **0.0262 ± 0.0000** |
-| portscan | VAE | 0.9982 ± 0.0005 | 0.9886 ± 0.0023 | 0.7737 ± 0.0161 | 0.9889 ± 0.0138 |
-| portscan | Dense v1 | 0.9988 ± 0.0007 | 0.9912 ± 0.0032 | 0.7645 ± 0.0135 | 0.9931 ± 0.0155 |
-| slowloris | VAE | 1.0000 ± 0.0000 | 1.0000 ± 0.0000 | 0.8271 ± 0.0158 | 1.0000 ± 0.0000 |
-| slowloris | Dense v1 | 1.0000 ± 0.0000 | 1.0000 ± 0.0000 | 0.8157 ± 0.0055 | 1.0000 ± 0.0000 |
+| portscan + apache_bench | 2181 | 0.9868 ± 0.0052 | 0.9587 | 0.8747 | 0.9381 ± 0.0261 |
+| portscan + slowloris | 1623 | 0.9999 ± 0.0001 | 0.9995 | 0.8782 | 1.0000 ± 0.0000 |
+| apache_bench + slowloris | 2416 | 0.9882 ± 0.0046 | 0.9672 | 0.8862 | 0.9441 ± 0.0235 |
 
-*(source : `08_dense_v1_comparison/results_single_attack_type_dense.csv/.md`)*
+**Decomposed apache_bench-only recall**: solo = 0.9092 ± 0.0382; paired with
+portscan = 0.9092 ± 0.0382; paired with slowloris = 0.9092 ± 0.0382 — same
+invariance confirmed on the second architecture.
 
-### Injection segmentée — Dense v1
+*(source: `11_pairwise_segmented_v2/dense_v2/results.md`)*
 
-![Erreur de reconstruction du Dense autoencoder v1 le long du flux segmenté](figures/segmented_injection_error_plot_dense.png)
+### 3.3 Segmented (contiguous-block) injection
 
-*Figure 2 — Même flux segmenté que la Figure 1, évalué avec le Dense
-autoencoder v1. Le bloc apache_bench forme une ligne quasi plate et
-déterministe (écart-type de recall = 0.0000 sur les 5 seeds), contrairement
-au nuage plus bruité du VAE (dû à l'échantillonnage stochastique de la
-reparamétrisation) — mais le niveau d'erreur reste comparable, bien en
-dessous du seuil.*
+![Dense reconstruction error across the segmented-injection stream](figures/segmented_injection_error_plot_dense.png)
 
-### Conclusion : la faiblesse sur apache_bench n'est pas spécifique à l'architecture
+*Figure 2 — Same stream as Figure 1, evaluated with the Dense autoencoder.
+Mean threshold_95 = 0.1256.*
 
-**Le Dense autoencoder v1 rate apache_bench au moins aussi mal que le VAE**
-(recall 2.6% vs 3.3%, F1 0.040 vs 0.051) — sur les 3 protocoles testés
-(individuel, paires, segmenté), les deux modèles échouent de façon quasi
-identique. Une nuance intéressante : le Dense v1 a un **meilleur pouvoir de
-séparation brut** sur apache_bench (ROC-AUC 0.696 vs 0.581, PR-AUC 0.270 vs
-0.213) — son score continu ordonne mieux les flows apache_bench par rapport
-au benign — mais cet avantage ne se traduit **pas** en meilleure détection
-au seuil `threshold_95` réel, chaque modèle étant calibré indépendamment sur
-sa propre distribution d'erreur benign.
+| Segment | n | Benign FPR (thr95) | Attack Recall (thr95) | F1 (thr95) | Recall in shuffled test (ref.) |
+|---|---|---|---|---|---|
+| benign (seg. 0) | 1705 | 0.0151 ± 0.0027 | — | — | — |
+| apache_bench | 1487 | — | 0.9092 ± 0.0382 | 0.9521 ± 0.0211 | 0.9092 ± 0.0382 |
+| benign (seg. 2) | 1705 | 0.0142 ± 0.0061 | — | — | — |
+| slowloris | 929 | — | 1.0000 ± 0.0000 | 1.0000 ± 0.0000 | 1.0000 ± 0.0000 |
+| benign (seg. 4) | 1705 | 0.1478 ± 0.0051 | — | — | — |
+| portscan | 694 | — | 1.0000 ± 0.0000 | 1.0000 ± 0.0000 | 1.0000 ± 0.0000 |
+| benign (seg. 6) | 1706 | 0.0870 ± 0.0063 | — | — | — |
 
-### Comparaison macro-moyenne (équilibre global entre types)
+*(source: `11_pairwise_segmented_v2/dense_v2/block_recall_f1.md`)*
 
-| Modèle | Recall macro (3 types) | F1 macro (3 types) |
-|---|---|---|
-| VAE | 0.6739 | 0.5505 |
-| Dense v1 | 0.6731 | 0.5401 |
+### 3.4 Both architectures agree
 
-L'écart entre les deux modèles (≤ 0.01) est **plus petit que la variance
-inter-seed du VAE lui-même sur apache_bench (std ROC-AUC = 0.077)** — aucun
-des deux modèles n'est donc de façon significative plus « équilibré » que
-l'autre entre les types d'attaque. Le motif est identique dans les deux
-cas : portscan et slowloris quasi parfaits, apache_bench presque
-totalement manqué.
+apache_bench recall is now 0.91–0.95 depending on architecture (previously
+2.6–3.3%), and the effect is consistent across every protocol tested
+(single, pairwise-decomposed, segmented) and across two architectures
+trained on genuinely different data (Dense: windows 01–08, 23,274 benign
+train flows; VAE: window_10 only, 3,049 benign train flows). This
+consistency is itself evidence that the fix addresses a *feature-space*
+limitation rather than an architecture- or training-data-specific quirk
+(see Section 4).
 
-#### Note de lecture — les deux modèles n'ont pas été entraînés sur les mêmes données
+![apache_bench detection before/after concurrency_src_1s](figures/apache_bench_before_after.png)
 
-Cette comparaison est menée sur **les mêmes flows de test, les mêmes 18
-colonnes et la même convention de seuil** pour les deux modèles — côté
-évaluation, elle est bien à armes égales. Côté **entraînement**, en
-revanche, les deux modèles diffèrent bien au-delà de l'architecture : le
-VAE est entraîné sur le seul benign de window_10 (**3 049 flows** de
-train, 20 seeds, split aléatoire 70/15/15), le Dense v1 sur les windows
-01–08 (**23 274 flows** de train, soit ~7.6× plus, 5 seeds,
-GroupShuffleSplit par signature) ; et window_10 contient des valeurs
-catégorielles (proto = icmp, conn_state OTH/S0) que l'encodeur one-hot —
-ajusté uniquement sur le train du Dense — n'a jamais vues, donc encodées
-en tout-zéro dans les données d'entraînement du VAE. Le scaler lui-même
-n'est pas un facteur de confusion (il est ajusté une seule fois, sur le
-train du Dense, et appliqué aux deux côtés — même échelle partout), mais
-la composition, le volume et la couverture catégorielle des données
-d'entraînement, si.
-
-Conséquence : les comparaisons fines de cette section — la quasi-égalité
-macro (0.674/0.551 vs 0.673/0.540) comme la nuance « meilleur pouvoir de
-discrimination du Dense sur apache_bench » (ROC-AUC 0.696 vs 0.581) — ne
-peuvent pas être attribuées à l'architecture seule : la différence de
-données d'entraînement y contribue de façon indissociable. Les
-formulations du type « répétées à l'identique » (section 5, protocole)
-concernent le protocole d'évaluation, pas les conditions d'entraînement,
-et doivent être lues avec cette note.
-
-La conclusion principale, elle, **n'est pas fragilisée — elle est
-renforcée** : deux architectures différentes, entraînées sur des données
-très différentes (composition de fenêtres, volume ~7.6×, couverture
-catégorielle), échouent sur apache_bench selon le même motif
-(recall ≤ 3.3 %). Le dénominateur commun n'est ni le modèle ni le jeu
-d'entraînement, mais l'espace de features à 18 colonnes — ce qui appuie
-d'autant la lecture « limite du jeu de features » de la section 7.
-
-*(source complète : `08_dense_v1_comparison/comparison_vae_vs_dense.md` ;
-analyse du confound : `10_final_report/06_scripts/o5_train_data_confound/`)*
+*Figure 3 — apache_bench recall and ROC-AUC, 18-feature (before) vs.
+19-feature (after), both architectures.*
 
 ---
 
-## 6. Diagnostic complémentaire — pourquoi apache_bench échappe au VAE
+## 4. Root Cause Analysis
 
-**Protocole.** Pour comprendre *pourquoi* apache_bench n'est pas séparé du
-trafic benign (sections 2-5), un diagnostic feature-par-feature a été mené :
-test de Kolmogorov-Smirnov (KS) et écart de moyenne (en écarts-types benign)
-entre apache_bench et benign sur les 18 colonnes de features scaled, puis un
-test d'hypothèse temporelle basé sur le temps inter-arrivée (IAT) entre
-flows consécutifs de même label. Aucune donnée modifiée, aucun
-réentraînement — inference-only sur le VAE clean-only `contam_0pct`, comme
-le reste de ce rapport (source complète :
-`10_final_report/04_apache_bench_diagnostics/`).
+### 4.1 Why apache_bench was originally missed
 
-### 6.1 Séparabilité statistique vs. taille d'effet
+apache_bench (`ab`) fires many near-identical short HTTP GET requests. At
+the single-flow level, each of those requests is an ordinary, unremarkable
+short HTTP connection — it does not look anomalous on its own. Diagnostic
+work (Kolmogorov-Smirnov separability + mean-shift analysis on the original
+18 features, full detail in `V1_ARCHIVE/10_final_report/
+04_apache_bench_diagnostics/findings.md`) showed why this defeated
+reconstruction-error-based detection specifically:
 
-| Feature | Groupe | KS stat | Écart moyen (σ benign) |
-|---|---|---|---|
-| orig_pkts_scaled | volume paquets | 0.755 | -0.44 σ |
-| orig_bytes_scaled | volume octets | 0.755 | -0.39 σ |
-| resp_bytes_scaled | volume octets | 0.754 | -0.68 σ |
-| resp_pkts_scaled | volume paquets | 0.754 | -0.62 σ |
-| duration_scaled | durée | 0.693 | -0.42 σ |
+- The best individual features (`orig_pkts_scaled`, `orig_bytes_scaled`,
+  etc.) had **high KS statistics (0.62–0.76)** against benign — on paper,
+  separable.
+- But their **mean shift was only 0.4–0.7 benign standard deviations** —
+  i.e., apache_bench's cluster sits *inside* the normal range of benign
+  traffic, not in its tail. The high KS came from apache_bench forming a
+  very narrow, low-variance cluster (a stereotyped, repeated request),
+  which produces a sharp empirical-CDF jump even when the cluster's center
+  is unremarkable.
+- Reconstruction error sums squared per-feature deviations from a
+  benign-fit manifold. A point sitting inside the training distribution's
+  normal range reconstructs cleanly **regardless of how sharply its CDF
+  differs from benign's** — which is exactly what happened: the typical
+  apache_bench flow's reconstruction error was close to the typical
+  benign flow's, and both models flagged only a small, fixed subset of
+  apache_bench flows (2.6–3.3% recall).
 
-*(source : `04_apache_bench_diagnostics/feature_diagnostics_apache_bench.csv`)*
+By contrast, portscan and slowloris push their best features tens to
+hundreds of benign standard deviations away (near-categorical splits,
+e.g. `conn_state=REJ`, extreme `byte_ratio`) — obviously anomalous at the
+single-flow level, which is why both models already detected them at
+≥98.8% recall under the 18-feature model.
 
-Les statistiques KS sont élevées (0.62-0.76) — sur le papier, apache_bench
-semble statistiquement séparable. Mais la colonne « écart moyen » raconte
-une autre histoire : le KS est élevé parce qu'apache_bench forme un
-**cluster très étroit et à faible variance** (requête HTTP quasi identique
-répétée), ce qui crée un saut net dans la CDF empirique — pas parce que ses
-valeurs sortent de la plage normale du trafic benign. Son centre ne se situe
-qu'à **0.4-0.7 écart-type benign** en moyenne, c'est-à-dire **à l'intérieur**
-de la plage normale du trafic benign, pas dans sa queue. L'erreur de
-reconstruction étant une somme d'écarts au carré par rapport à une variété
-apprise sur le benign, un point situé dans la plage normale de la
-distribution d'entraînement se reconstruit proprement, quel que soit
-l'écart de sa CDF par rapport à celle du benign.
+### 4.2 What was actually missing, and the fix
 
-À titre de comparaison, les features qui séparent fortement portscan et
-slowloris du benign (`conn_state_SF`, `byte_ratio_scaled`) déplacent leurs
-moyennes de **31 à plus de 1300 écarts-types benign** — un ordre de
-grandeur sans commune mesure avec apache_bench.
+What makes apache_bench anomalous is not any single request's shape — it's
+that the **same request repeats far more often, with far less inter-arrival
+variance, than organic traffic**. That is a property of the *local request
+rate*, invisible to a model that scores one flow at a time against 18
+purely per-flow features.
 
-### 6.2 Confirmation par l'erreur de reconstruction du VAE
+The fix, `concurrency_src_1s`: for each flow, the count of other flows from
+the **same source IP** arriving within ±1 second (log1p-transformed,
+standardized on the benign-train split only — same leakage-free convention
+as every other feature). This is purely temporal/volumetric and contains
+no hardcoded IP value anywhere in its computation. Adding this single
+19th feature is what produced the recall jump documented in Sections 2–3.
 
-![Distribution de l'erreur de reconstruction du VAE par type](figures/vae_reconstruction_error_hist.png)
+### 4.3 Generalization caveat
 
-*Figure 3 — Distribution de l'erreur de reconstruction (échelle log, moyenne
-sur 20 seeds) pour benign, apache_bench et portscan+slowloris combinés.
-apache_bench chevauche presque entièrement la distribution benign : à peine
-2.6% des flows apache_bench dépassent le seuil moyen `threshold_95` — un
-taux même **inférieur** au taux de faux positifs benign lui-même (4.6%,
-proche du 5% attendu par construction du seuil). portscan+slowloris, à
-l'inverse, en est séparé par plusieurs ordres de grandeur (erreur moyenne ≈
-56 900 contre 0.061 pour benign et 5.75 pour apache_bench, 100% des flows
-au-dessus du seuil).*
-
-![Box plots des features les plus discriminantes pour apache_bench](figures/top_features_apache_bench_boxplots.png)
-
-*Figure 4 — Même constat visuellement : les 8 features les plus
-discriminantes (par KS) montrent un chevauchement massif des boîtes entre
-benign et apache_bench malgré des statistiques KS élevées.*
-
-### 6.3 Hypothèse temporelle : temps inter-arrivée (IAT)
-
-Motivé par le constat de la section 6.1 (apache_bench = requête individuelle
-banale, mais répétée), un test rapide et **sans réentraînement** a été
-conduit sur une seule feature candidate calculée directement à partir de la
-colonne `ts` existante : le temps inter-arrivée (IAT) entre flows
-consécutifs de même label, au sein d'une même fenêtre de capture.
-
-![Temps inter-arrivée : benign vs. apache_bench](figures/iat_apache_bench_vs_benign_hist.png)
-
-*Figure 5 — Distribution du temps inter-arrivée (échelle log). Le médian
-apache_bench (0.00092s) est environ **2364× plus court** que le médian
-benign (2.18s) — statistique KS = 0.710 (p ≈ 0).*
-
-**Ce résultat nuance, plutôt qu'il ne confirme simplement, l'hypothèse.** Le
-KS de l'IAT (0.710) n'est pas supérieur aux meilleures features à un seul
-flow de la section 6.1 (jusqu'à 0.755) — donc l'IAT seul n'est pas
-statistiquement « meilleur » par ce critère. Ce qui diffère radicalement,
-c'est la **taille d'effet** : alors que les features à un seul flow
-déplaçaient apache_bench de moins d'un écart-type benign (section 6.1),
-l'IAT sépare les deux groupes par **~3 ordres de grandeur** — un signal
-d'une nature complètement différente, invisible à un modèle qui ne voit
-qu'un flow à la fois.
-
-**Avertissement explicite : ce test est une vérification de séparabilité
-statistique uniquement — il n'a PAS été validé par un réentraînement.**
-Aucun réentraînement n'a été effectué ; rien ne garantit qu'ajouter cette
-feature (ou une variante — taux de requêtes, concurrence) au VAE et le
-réentraîner ferait effectivement passer l'erreur de reconstruction
-d'apache_bench au-dessus du seuil. Cela nécessiterait un cycle complet
-réentraînement + évaluation, explicitement hors périmètre de ce diagnostic.
-
-*(source complète, incl. tableaux de percentiles : `04_apache_bench_diagnostics/findings.md` et `temporal_iat_summary.csv`)*
+This lab dataset has exactly one attacker IP and a small number of benign
+hosts. `concurrency_src_1s` is IP-agnostic by construction (it groups by
+whatever source IP a flow actually has, not a hardcoded value), but the
+dataset itself cannot distinguish "high per-source request rate is
+inherently suspicious" from "high per-source request rate happens to
+correlate with the one IP that is the attacker here." Knock-out ablation
+in `14_concurrency_feature_experiment/` (freezing the feature to its
+benign-train mean at inference time, same trained weights) confirmed the
+recall gain collapses back to the 18-feature baseline — the model is
+genuinely using this feature, not something else correlated with it — but
+that check cannot rule out the dataset-composition caveat above. Before
+generalizing this result to a deployment with many legitimate high-rate
+clients (e.g., NAT'd traffic, load balancers, legitimate bursty clients),
+the feature's benign false-positive behavior should be validated in a
+multi-source-IP setting.
 
 ---
 
-## 7. Conclusion générale
+## 5. Methodology Note — How the Right Feature Was Found
 
-1. **La métrique binaire `is_attack` masque une faiblesse structurelle
-   sévère sur apache_bench** (recall 2.6-3.3% selon le modèle), invisible
-   dans les rapports agrégés existants car diluée par les 2 autres types
-   d'attaque, détectés quasi parfaitement (≥ 98.8% de recall).
-2. **Ce recall n'est pas amélioré par la co-présence d'un autre type
-   d'attaque** dans l'ensemble d'évaluation (recall décomposé stable à
-   ~3.2-3.3% qu'apache_bench soit seul ou en paire) — la hausse du recall
-   "poolé" observée en paire est un artefact de mélange de populations, pas
-   une amélioration réelle de la détection.
-3. **L'ordre d'arrivée des flows (mélangé vs bloc contigu) ne change rien**
-   au comportement du modèle — confirmé empiriquement sur le VAE et le
-   Dense v1, cohérent avec le fait que les deux sont des détecteurs
-   statiques par flow, sans mémoire de séquence.
-4. **La faiblesse sur apache_bench est partagée par le VAE et le Dense
-   autoencoder v1** — deux architectures différentes échouent de façon
-   quasi identique, ce qui pointe vers une **limite du jeu de 18 features
-   actuel** plutôt qu'un défaut d'un modèle en particulier. Changer
-   d'architecture d'autoencodeur ne résoudra probablement pas ce problème
-   seul.
+The path to `concurrency_src_1s` was not direct, and the detour is worth
+recording briefly. The first hypothesis tested (`13_temporal_feature_experiment/`)
+was **inter-arrival time relative to the single previous flow** from the
+same source IP — motivated by an early diagnostic finding that apache_bench's
+median IAT was ~2364× shorter than benign's. Retraining with that feature
+**did not move recall at all** (KS = 0.375 on the full dataset, weaker than
+the existing best features), and exposed that the original 2364× figure was
+itself a measurement artifact of computing IAT over a sparse test subset
+rather than the full flow history. The feature that actually worked,
+tested next (`14_concurrency_feature_experiment/`), was a **local window
+count** rather than a single-previous-flow gap — the two are related but
+not equivalent, and only the windowed version captured the signal
+strongly enough to move detection. Full negative and positive results,
+including a knock-out ablation and a dataset-composition confound found
+and corrected along the way, are archived in both experiment folders and
+summarized in `V1_ARCHIVE/README.md`.
 
-### Note d'architecture — dimension latente nominale vs. effective
+---
 
-L'encodeur du VAE (`18 → Dense(16) → Dense(8) → z_mean/z_log_var(10)`)
-donne au code latent une dimension (10) **supérieure à la couche qui
-l'alimente** (8). `z_mean` étant une transformation linéaire d'une
-activation à 8 dimensions, le code latent ne peut porter au plus que 8
-degrés de liberté : « latent = 10 » est une capacité nominale, pas
-effective. Pour vérifier que ce choix inhabituel n'affecte pas les
-conclusions, une ablation dédiée
-(`phase3_vae/05_contamination_sweep/12_latent_ablation/`) a réentraîné les
-20 mêmes seeds avec latent = 8 (= la largeur du bottleneck), tout le reste
-inchangé (β = 0.25, mêmes splits, scoring z_mean déterministe,
-threshold_95 recalibré par seed). Résultat : les deux variantes sont
-**indiscernables** sur les métriques de détection — recall par type
-strictement identique (apache_bench 2.6 %, portscan 99.8 %, slowloris
-100 %) ; ROC-AUC apache_bench 0.702 vs 0.667, soit une différence appariée
-de +0.035 dont l'IC bootstrap à 95 % [−0.014 ; +0.086] inclut zéro
-(variance de seed). Le nombre de dimensions latentes réellement actives
-(std(z_mean) > 0.15) reste inférieur à la largeur nominale dans les deux
-cas (en moyenne 4.4/8 et 5.9/10, très variable selon le seed). La
-dimension latente surdimensionnée est donc une **maladresse architecturale
-sans effet mesurable** sur les résultats rapportés ; elle est notée ici
-comme limite de conception, sans invalider les chiffres du modèle
-canonique (latent = 10).
+## 6. Known Limitation
 
-### Note de prudence — calibration du seuil sur un petit ensemble de validation
+**The O3 dedup-prevalence correction has not yet been applied to the
+current (19-feature) PR-AUC/F1 numbers.** The prior 18-feature report
+applied a correction (recomputing PR-AUC/F1 on a deduplicated test set,
+since the resampled windows — `window_resampled_15pct/20pct` — repeat real
+flows and distort prevalence) after confirming ROC-AUC/recall/FPR are
+behavior metrics unaffected by it (<0.02 difference, see
+`V1_ARCHIVE/10_final_report/01_single_attack_type/vae/dedup_sanity_check/`).
+That correction has not been re-run on the current model. **ROC-AUC,
+recall, and FPR figures in this report are unaffected**; the PR-AUC/F1
+numbers above should be read as provisional until the correction is
+reapplied — this is flagged as a follow-up item, not a known error.
 
-Le `threshold_95` de chaque seed est le 95ᵉ percentile de l'erreur de
-reconstruction sur un ensemble val-benign de **653 flows seulement**
-(split de validation de window_10) — soit un ordre statistique estimé à
-partir de la ~33ᵉ plus grande valeur. Deux conséquences quantifiées
-(`10_final_report/06_scripts/o4_threshold_transfer/`, 20 seeds, scoring
-z_mean déterministe, aucun réentraînement) :
+---
 
-**(1) Le seuil est intrinsèquement bruité.** Entre seeds, threshold_95
-varie de 0.043 à 0.153 (moyenne 0.090, **CV 27.9 %**) ; et au sein d'un
-même seed, l'intervalle de confiance bootstrap à 95 % du percentile a une
-largeur moyenne de ~60 % du seuil. Une part importante de la variabilité
-apparente du seuil entre seeds n'est donc pas une différence de modèle,
-mais le bruit d'estimation d'un percentile de queue sur n = 653.
+## 7. Supplementary Notes (carried forward, still valid)
 
-**(2) Le transfert val → test tient à peu près, avec un biais
-systématique.** Appliqué aux flows benign du test (fenêtres différentes de
-celle de calibration), le seuil val donne un FPR réalisé de **5.77 % ±
-0.58 %** contre 5.00 % nominal (18 seeds sur 20 au-dessus de 5 % — un
-écart orienté, pas du bruit) ; le seuil qui donnerait exactement 5 % sur
-le test benign serait en moyenne 8 % plus haut. Le test KS entre les deux
-distributions d'erreur benign (val vs test) est en moyenne de 0.067 —
-un décalage détectable mais de faible ampleur. Sur ces données le
-transfert est donc raisonnable, mais **rien ne garantit que l'écart reste
-aussi faible dans un environnement de déploiement différent** : le seuil
-devrait y être recalibré sur du benign local.
+**VAE latent-dimension note.** The VAE's bottleneck (8 units) is narrower
+than its nominal latent dimension (10), so `z_mean` cannot carry more than
+8 effective degrees of freedom regardless of the declared latent size. A
+dedicated ablation (`phase3_vae/05_contamination_sweep/12_latent_ablation/`,
+run on the 18-feature model) found latent=8 and latent=10 statistically
+indistinguishable on detection metrics — an architectural imprecision
+without measurable effect on any number reported here.
 
-Portée : les métriques indépendantes du seuil (ROC-AUC, PR-AUC) ne sont
-pas concernées ; seul le point de fonctionnement dépendant de
-threshold_95 (recall, F1, FPR) l'est.
+**Threshold calibration note.** `threshold_95` is estimated from a small
+held-out benign validation set (653 flows for the VAE, 4,609 for Dense) —
+a tail percentile with real sampling noise. Prior analysis
+(`10_final_report/06_scripts/o4_threshold_transfer/`, run on the
+18-feature model) found threshold_95 varies with CV≈28% across VAE seeds,
+and the val→test FPR transfer carries a small systematic upward bias
+(realized ≈5.8% vs. 5.0% nominal). This affects the threshold-dependent
+operating point (recall/F1/FPR); ROC-AUC/PR-AUC are unaffected.
 
-### Note sur le modèle de menace — une vérité terrain définie par l'IP source, pas par le comportement
+**Threat-model note.** Throughout this project, `is_attack` is defined by
+source-IP identity (`id.orig_h == <attacker IP>`), not by flow behavior.
+Both models therefore learn "the statistical signature of traffic from the
+attacking machine," not a behavior-based notion of maliciousness. Scenarios
+where that equivalence breaks — IP spoofing, NAT'd or shared-source traffic
+mixing legitimate and malicious flows, lateral movement from a previously
+trusted host — are not covered by this evaluation and are not tested.
 
-Dans tout le projet, le label `is_attack` est défini par **l'identité de
-la machine source**, pas par le comportement du flow :
-`is_attack = (id.orig_h == 192.168.10.2)`, appliqué après un filtre
-lab-only (origine **et** destination dans les 3 IP du lab). Aucun signal
-comportemental ou de signature n'entre dans ce label ; les logs
-d'orchestration (`attack_log.csv`) ne servent qu'à typer les attaques a
-posteriori — et le fait que 100 % des flows étiquetés attack tombent
-dans un intervalle de commande d'attaque (tolérance 1 s) montre que ce
-label est propre *dans ce laboratoire*. L'IP n'est pas une feature du
-modèle (les 18 colonnes n'en contiennent pas) : la limite est dans la
-**définition** de ce qui compte comme attaque, pas dans les entrées.
+---
 
-Conséquence : ce que les modèles apprennent à séparer est, au sens
-strict, « la signature statistique du trafic émis par la machine
-attaquante » — pas une notion sémantique d'intention malveillante. Les
-scénarios où cette équivalence se brise ne sont pas couverts par
-l'évaluation : attaquant changeant d'adresse ou usurpant une IP
-(spoofing), trafic mixte légitime + malveillant derrière une même
-source (NAT, machine compromise émettant aussi du trafic normal),
-mouvement latéral depuis une machine « de confiance ». La
-généralisation à ces cas n'est ni testée ni garantie.
+## 8. Conclusion
 
-Cette note ne remet pas en cause les résultats du projet — le sweep de
-contamination, les analyses par type d'attaque et les diagnostics
-apache_bench restent valides **sous cette définition de la vérité
-terrain**. Elle borne en revanche la portée des lectures « déploiement
-réel » : dans un environnement où l'attaquant n'est pas une source
-unique et dédiée, la correspondance label ↔ comportement devrait être
-réétablie (étiquetage par signature/comportement) avant de transposer
-les chiffres rapportés ici.
-
-### Pistes pour la suite
-
-- **Feature engineering ciblé sur la signature apache_bench** — le
-  diagnostic de la section 6 apporte un premier élément de preuve
-  statistique en faveur de cette piste : le temps inter-arrivée entre
-  requêtes apache_bench consécutives est ~2364× plus court que pour le
-  benign (section 6.3), un signal d'une taille d'effet largement supérieure
-  à tout ce qu'offrent les 18 features actuelles. Une feature de type
-  timing inter-requêtes / taux de requêtes par IP source sur une fenêtre
-  glissante / concurrence par destination reste néanmoins **une hypothèse
-  non validée par réentraînement** — la prochaine étape logique est un
-  cycle complet ajout-de-feature + réentraînement + réévaluation pour
-  confirmer qu'elle fait effectivement franchir le seuil de détection à
-  apache_bench, et pas seulement qu'elle sépare statistiquement les deux
-  populations.
-- **Seuil ou modèle spécifique par type d'attaque** (approche ensembliste)
-  plutôt qu'un seuil unique global — étant donné que portscan et slowloris
-  sont déjà quasi résolus, un second détecteur/seuil dédié à la signature
-  HTTP courte pourrait cibler spécifiquement apache_bench sans dégrader les
-  2 autres types.
-- **Élargir le rééchantillonnage benign par segment** avant de tirer des
-  conclusions sur la fluctuation du FPR observée en section 4 (3-9.6%) —
-  vérifier si elle persiste à un n plus grand par segment.
+1. **The apache_bench detection gap is closed.** Recall rose from 2.6–3.3%
+   to 90.9–95.0% (Dense / VAE respectively), ROC-AUC from 0.58–0.70 to
+   0.98+, with a small benign-FPR cost (+0.4 to +0.5 percentage points on
+   average). portscan and slowloris remain at ≥99.8% recall, unaffected.
+2. **The fix is a feature-space fix, not a model fix.** Two architectures
+   trained on disjoint data (different windows, ~7.6× different training-set
+   size) show the same magnitude of improvement from the same single added
+   feature — the strongest evidence available that the original 18-feature
+   set, not either architecture, was the limiting factor.
+3. **The improvement is robust across evaluation protocols.** Decomposed
+   pairwise recall and segmented (contiguous-block) recall both match the
+   shuffled single-attack-type number exactly, for both models — the
+   detection behavior is a stable per-flow property, not an artifact of how
+   the test set happens to be assembled.
+4. **Two things remain open**, tracked explicitly rather than silently
+   assumed resolved: the O3 dedup-prevalence correction has not been
+   reapplied to PR-AUC/F1 (Section 6), and `concurrency_src_1s`'s
+   generalization to multi-attacker or high-legitimate-rate environments is
+   untested on this single-attacker-IP dataset (Section 4.3).

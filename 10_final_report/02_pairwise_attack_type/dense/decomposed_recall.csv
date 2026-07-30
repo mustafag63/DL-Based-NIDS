@@ -1,0 +1,4 @@
+attack_type_pair,recall__apache_bench_mean,recall__apache_bench_std,recall__portscan_mean,recall__portscan_std,recall__slowloris_mean,recall__slowloris_std
+apache_bench+slowloris,0.9092131809011432,0.03822588161700693,,,1.0,0.0
+portscan+apache_bench,0.9092131809011432,0.03822588161700693,1.0,0.0,,
+portscan+slowloris,,,1.0,0.0,1.0,0.0

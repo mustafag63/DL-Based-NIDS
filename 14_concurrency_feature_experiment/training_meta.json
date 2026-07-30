@@ -1,0 +1,133 @@
+{
+  "A": {
+    "feature_cols": [
+      "duration_scaled",
+      "orig_bytes_scaled",
+      "resp_bytes_scaled",
+      "orig_pkts_scaled",
+      "resp_pkts_scaled",
+      "bytes_per_sec_scaled",
+      "pkts_per_sec_scaled",
+      "byte_ratio_scaled",
+      "proto_tcp",
+      "proto_udp",
+      "service_dns",
+      "service_http",
+      "service_none",
+      "service_ssh",
+      "conn_state_REJ",
+      "conn_state_RSTO",
+      "conn_state_S1",
+      "conn_state_SF",
+      "concurrency_src_1s_scaled"
+    ],
+    "seeds": [
+      {
+        "seed": 0,
+        "epochs_run": 83,
+        "final_val_loss": 0.02921150252223015,
+        "train_time_sec": 10.1
+      },
+      {
+        "seed": 1,
+        "epochs_run": 42,
+        "final_val_loss": 0.03270038962364197,
+        "train_time_sec": 5.4
+      },
+      {
+        "seed": 2,
+        "epochs_run": 64,
+        "final_val_loss": 0.03764484450221062,
+        "train_time_sec": 7.8
+      }
+    ]
+  },
+  "B": {
+    "feature_cols": [
+      "duration_scaled",
+      "orig_bytes_scaled",
+      "resp_bytes_scaled",
+      "orig_pkts_scaled",
+      "resp_pkts_scaled",
+      "bytes_per_sec_scaled",
+      "pkts_per_sec_scaled",
+      "byte_ratio_scaled",
+      "proto_tcp",
+      "proto_udp",
+      "service_dns",
+      "service_http",
+      "service_none",
+      "service_ssh",
+      "conn_state_REJ",
+      "conn_state_RSTO",
+      "conn_state_S1",
+      "conn_state_SF",
+      "byte_ratio_var_src_2s_wins_log_scaled"
+    ],
+    "seeds": [
+      {
+        "seed": 0,
+        "epochs_run": 32,
+        "final_val_loss": 0.03314360976219177,
+        "train_time_sec": 4.4
+      },
+      {
+        "seed": 1,
+        "epochs_run": 47,
+        "final_val_loss": 0.03217744082212448,
+        "train_time_sec": 6.0
+      },
+      {
+        "seed": 2,
+        "epochs_run": 53,
+        "final_val_loss": 0.036015018820762634,
+        "train_time_sec": 6.7
+      }
+    ]
+  },
+  "C": {
+    "feature_cols": [
+      "duration_scaled",
+      "orig_bytes_scaled",
+      "resp_bytes_scaled",
+      "orig_pkts_scaled",
+      "resp_pkts_scaled",
+      "bytes_per_sec_scaled",
+      "pkts_per_sec_scaled",
+      "byte_ratio_scaled",
+      "proto_tcp",
+      "proto_udp",
+      "service_dns",
+      "service_http",
+      "service_none",
+      "service_ssh",
+      "conn_state_REJ",
+      "conn_state_RSTO",
+      "conn_state_S1",
+      "conn_state_SF",
+      "concurrency_src_1s_scaled",
+      "concurrency_dst_2s_scaled",
+      "byte_ratio_var_src_2s_wins_log_scaled"
+    ],
+    "seeds": [
+      {
+        "seed": 0,
+        "epochs_run": 37,
+        "final_val_loss": 0.06277474761009216,
+        "train_time_sec": 4.9
+      },
+      {
+        "seed": 1,
+        "epochs_run": 42,
+        "final_val_loss": 0.048740945756435394,
+        "train_time_sec": 5.6
+      },
+      {
+        "seed": 2,
+        "epochs_run": 49,
+        "final_val_loss": 0.05146895349025726,
+        "train_time_sec": 6.3
+      }
+    ]
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "feature_cols": [
+    "duration_scaled",
+    "orig_bytes_scaled",
+    "resp_bytes_scaled",
+    "orig_pkts_scaled",
+    "resp_pkts_scaled",
+    "bytes_per_sec_scaled",
+    "pkts_per_sec_scaled",
+    "byte_ratio_scaled",
+    "proto_tcp",
+    "proto_udp",
+    "service_dns",
+    "service_http",
+    "service_none",
+    "service_ssh",
+    "conn_state_REJ",
+    "conn_state_RSTO",
+    "conn_state_S1",
+    "conn_state_SF",
+    "concurrency_src_1s_scaled"
+  ],
+  "seeds": [
+    {
+      "seed": 0,
+      "epochs_run": 83,
+      "final_val_loss": 0.02921150252223015,
+      "train_time_sec": 10.0
+    },
+    {
+      "seed": 1,
+      "epochs_run": 42,
+      "final_val_loss": 0.03270038962364197,
+      "train_time_sec": 5.3
+    },
+    {
+      "seed": 2,
+      "epochs_run": 64,
+      "final_val_loss": 0.03764484450221062,
+      "train_time_sec": 7.9
+    },
+    {
+      "seed": 3,
+      "epochs_run": 53,
+      "final_val_loss": 0.035800088196992874,
+      "train_time_sec": 6.6
+    },
+    {
+      "seed": 4,
+      "epochs_run": 48,
+      "final_val_loss": 0.032911207526922226,
+      "train_time_sec": 6.1
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-# Why apache_bench flows are not separable from benign
+z# Why apache_bench flows are not separable from benign
 
 Diagnostic on the clean-only (0% train contamination) VAE (`phase3_vae/05_contamination_sweep/04_models/contam_0pct`, 20 seeds, inference only, no retraining), using `06_attack_type_analysis/test_with_attack_type.csv`. Companion outputs: `feature_diagnostics_{apache_bench,portscan,slowloris}.csv`, `vae_reconstruction_error_hist.png`, `vae_reconstruction_error_summary.csv`, `top_features_apache_bench_boxplots.png`.
 

@@ -1,0 +1,66 @@
+{
+  "n_rows": 46495,
+  "radii_seconds": [
+    1.0,
+    2.0,
+    5.0
+  ],
+  "feature_families": {
+    "concurrency_src_{r}s": "same source IP, |dt|<=r within window_id, count excl. self",
+    "concurrency_dst_{r}s": "same (dest IP, dest port), |dt|<=r within window_id, count excl. self",
+    "byte_ratio_var_src_{r}s": "variance of byte_ratio among concurrency_src's neighborhood, incl. self"
+  },
+  "transform": "log1p(raw)",
+  "scaler": {
+    "fit_on": "dense v1 train split (all benign)",
+    "n_fit_rows": 23274,
+    "per_feature": {
+      "concurrency_src_1s_scaled": {
+        "mean": 2.0864962884954803,
+        "std": 0.6023503882972578,
+        "source_col": "concurrency_src_1s_log"
+      },
+      "concurrency_dst_1s_scaled": {
+        "mean": 1.9927751127264277,
+        "std": 0.7260484563060592,
+        "source_col": "concurrency_dst_1s_log"
+      },
+      "byte_ratio_var_src_1s_scaled": {
+        "mean": 0.012205483871843621,
+        "std": 0.025177140415873836,
+        "source_col": "byte_ratio_var_src_1s_log"
+      },
+      "concurrency_src_2s_scaled": {
+        "mean": 2.4137960095890625,
+        "std": 0.6083250101109062,
+        "source_col": "concurrency_src_2s_log"
+      },
+      "concurrency_dst_2s_scaled": {
+        "mean": 2.312260066519493,
+        "std": 0.7783656980483432,
+        "source_col": "concurrency_dst_2s_log"
+      },
+      "byte_ratio_var_src_2s_scaled": {
+        "mean": 0.013573744665613374,
+        "std": 0.026812276549661555,
+        "source_col": "byte_ratio_var_src_2s_log"
+      },
+      "concurrency_src_5s_scaled": {
+        "mean": 3.0315545782927598,
+        "std": 0.5507054533668426,
+        "source_col": "concurrency_src_5s_log"
+      },
+      "concurrency_dst_5s_scaled": {
+        "mean": 2.915125413889619,
+        "std": 0.8324796162416839,
+        "source_col": "concurrency_dst_5s_log"
+      },
+      "byte_ratio_var_src_5s_scaled": {
+        "mean": 0.015173226362051883,
+        "std": 0.020757614529495788,
+        "source_col": "byte_ratio_var_src_5s_log"
+      }
+    }
+  },
+  "note": "no hardcoded attacker/benign IP value used in feature math; ATTACKER_IP only used to verify alignment against the combined feature table's is_attack column."
+}
