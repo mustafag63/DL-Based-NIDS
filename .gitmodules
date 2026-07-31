@@ -1,3 +1,9 @@
 [submodule "experiments/ids-analysis/ANALYS-BENIGN"]
 	path = experiments/ids-analysis/ANALYS-BENIGN
 	url = https://github.com/mustafag63/Analysis-Trafic-Benign.git
+[submodule "traffic-generators/selenium-bot"]
+	path = traffic-generators/selenium-bot
+	url = https://github.com/mustafag63/selenium-bot.git
+[submodule "traffic-generators/locust"]
+	path = traffic-generators/locust
+	url = https://github.com/mustafag63/locust-bot.git
