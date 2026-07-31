@@ -50,3 +50,23 @@ AUC delta (full - no_conn_state): +0.0122. F1 delta (full - no_conn_state): -0.0
 |---|---|---|---|---|
 | Naive baseline (`conn_state != SF`) | 0.9908 | 0.6656 | 0.7963 | — |
 | Autoencoder — full_features (pctl95, 5-seed mean) | 0.9353 | 0.8002 | 0.8624 | 0.9463 |
+
+## Attack-type 4-panel summary
+
+![Attack-type 4-panel summary](06_attack_type_summary_4panel.png)
+
+## Pooled (all attack types together) summary
+
+Ayrı ayrı attack-type kırılımı yerine, benign + apache_bench + portscan + slowloris
+hepsi AYNI koşuda birlikte değerlendirilmiş (test_with_attack_type.csv, pooled,
+n_benign=6821, n_attack=3110), 5-seed mean +/- std:
+
+| metric | pooled mean +/- std |
+|---|---|
+| ROC-AUC | 0.8542 +/- 0.0338 |
+| PR-AUC | 0.7807 +/- 0.0246 |
+| F1 (thr95) | 0.6390 +/- 0.0041 |
+| benign FPR (thr95) | 0.0615 +/- 0.0020 |
+| attack recall (thr95, pooled) | 0.5329 +/- 0.0031 |
+
+![Pooled summary](07_pooled_summary_4panel.png)

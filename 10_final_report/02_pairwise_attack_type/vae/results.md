@@ -19,3 +19,7 @@ Per-flow decision (errors > thr95) does not depend on which other flows share th
 | apache_bench (solo) | 0.9500 +/- 0.0453 |
 | portscan+apache_bench (pair) | 0.9500 +/- 0.0453 |
 | apache_bench+slowloris (pair) | 0.9500 +/- 0.0453 |
+
+![Pooled recall](pooled_recall.png)
+
+![Decomposed recall](decomposed_recall.png)

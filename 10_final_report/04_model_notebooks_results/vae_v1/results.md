@@ -56,3 +56,63 @@ Loss eğrileri (recon + KL), 4 varyant yan yana: bkz. `03_loss_curves_beta_varia
 ## 6. Final tek-seferlik test değerlendirmesi (seçilen varyant: beta=0.25)
 
 TEST AUC = 0.9372. TEST F1 (pctl95 threshold, val'den) = 0.8413.
+
+## 7. 5-seed pooled sonuç (kullanıcı isteği üzerine eklendi)
+
+Bölüm 4-6'daki tek-seed sayılar, mimari seçim sürecinin (latent-dim/beta sweep) bir yan
+ürünüydü. Burada aynı 5 seed (0-4), kanonik `contam_0pct` model ağırlıkları (18 feature,
+v1) ve deterministik z_mean skorlama ile 5-seed ortalama sonuç var -- bu,
+`01_single_attack_type/vae/results.md`'deki 20-seed attack-type-bazlı tablonun pooled/5-seed
+karşılığı, aynı `test_with_attack_type.csv` (9931 satır: benign + portscan + apache_bench +
+slowloris, resampled pencereler dahil) test kümesi üzerinden.
+
+**Not — model ağırlıkları arşivden yüklendi:** Canlı `phase3_vae/05_contamination_sweep/
+04_models/contam_0pct/` klasörü v2 retrain'i tarafından yerinde (in-place) üzerine
+yazılmış (artık 19-feature ağırlıkları içeriyor, input_shape=(None,19)); gerçek v1
+(18-feature) ağırlıkları sadece `V1_ARCHIVE/phase3_vae/.../contam_0pct/` altında hâlâ
+duruyor, bu tablo oradan yüklendi.
+
+**Not — Bölüm 4-6'nın "TEST AUC" sayısıyla doğrudan kıyaslanamaz:** Bölüm 4-6, orijinal
+phase3_vae notebook'unun kendi `window_10` train/val/test split'ini kullanıyordu; bu
+bölüm ise `06_attack_type_analysis/test_with_attack_type.csv`'nin (Dense v1 karşılaştırma
+altyapısının kullandığı, resampled pencereleri de içeren, 9931 satırlık) test kümesini
+kullanıyor -- farklı bir test popülasyonu. Dense v1 notebook'unun 5-seed pooled sayısıyla
+(`../dense_v1/results.md`, test_auc=0.9463) da bu yüzden birebir aynı popülasyon değil;
+en doğru dense-vae v1 kıyası attack-type bazında yapılan karşılaştırmadır (bkz.
+`01_single_attack_type/{dense_v1,vae}/results.md`).
+
+| metric | 5-seed mean +/- std |
+|---|---|
+| ROC-AUC | 0.8541 +/- 0.0184 |
+| PR-AUC | 0.7787 +/- 0.0154 |
+| F1 (thr95) | 0.6459 +/- 0.0039 |
+| benign FPR (thr95) | 0.0549 +/- 0.0045 |
+| attack recall (thr95, pooled) | 0.5344 +/- 0.0000 |
+
+n_benign=6821, n_attack=3110 (test_with_attack_type.csv, pooled). Pooled recall düşük
+çünkü apache_bench (n=1487, kendi recall'u ~0.026) tüm pooled attack'ların ~%48'ini
+oluşturuyor ve ortalamayı aşağı çekiyor -- portscan/slowloris tek başına ~1.0 recall'da
+(bkz. `01_single_attack_type/vae/results.md`).
+
+ROC (mean-of-5-seed error): bkz. `04_roc_curve_5seed.png`. Reconstruction error histogramı
+(mean-of-5-seed error): bkz. `05_reconstruction_error_histogram_5seed.png`.
+
+## Attack-type 4-panel summary
+
+![Attack-type 4-panel summary](06_attack_type_summary_4panel.png)
+
+## Pooled (all attack types together) summary
+
+Ayrı ayrı attack-type kırılımı yerine, benign + apache_bench + portscan + slowloris
+hepsi AYNI koşuda birlikte değerlendirilmiş (test_with_attack_type.csv, pooled,
+n_benign=6821, n_attack=3110), 5-seed mean +/- std:
+
+| metric | pooled mean +/- std |
+|---|---|
+| ROC-AUC | 0.8541 +/- 0.0184 |
+| PR-AUC | 0.7787 +/- 0.0154 |
+| F1 (thr95) | 0.6459 +/- 0.0039 |
+| benign FPR (thr95) | 0.0549 +/- 0.0045 |
+| attack recall (thr95, pooled) | 0.5344 +/- 0.0000 |
+
+![Pooled summary](07_pooled_summary_4panel.png)

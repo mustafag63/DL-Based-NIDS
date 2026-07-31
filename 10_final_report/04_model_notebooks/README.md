@@ -19,6 +19,14 @@ karşılığı olan, çalıştırılmış bir v2 notebook hiçbir zaman üretilm
 dolayısıyla burada `dense_v2.ipynb` / `vae_v2.ipynb` yok. İstenirse
 script'ler notebook formatına çevrilip çalıştırılabilir.
 
+**Sade v2 inference figürleri var:** `../04_model_notebooks_results/dense_v2/`
+ve `vae_v2/` içinde, zaten eğitilmiş kanonik v2 modellerinden (seed=0)
+üretilmiş ROC eğrisi + reconstruction-error histogramı bulunuyor (bkz.
+`06_scripts/report_generation/build_04_notebooks_v2.py`). Loss curve,
+ablation ve latent-dim/beta sweep bölümleri YOK — bunlar retraining
+gerektirir ve v1'in mimari seçimi v2'de değişmeden kullanıldığı için
+tekrarlanmadı.
+
 Kaynak (orijinal) dosyalar:
 - `phase3_dense/phase3_dense_autoencoder.ipynb`
 - `phase3_vae/phase3_vae_autoencoder.ipynb`
