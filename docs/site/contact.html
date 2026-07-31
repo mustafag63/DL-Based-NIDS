@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<title>TechMarket - İletişim</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <div class="logo">TechMarket</div>
+  <nav>
+    <a href="index.html">Ana Sayfa</a>
+    <a href="products.html">Ürünler</a>
+    <a href="about.html">Hakkımızda</a>
+    <a href="contact.html">İletişim</a>
+  </nav>
+</header>
+
+<div class="container">
+  <div class="breadcrumb"><a href="index.html">Ana Sayfa</a> &raquo; İletişim</div>
+  <h2>Bize Ulaşın</h2>
+
+  <form id="contact-form" action="/submit-contact" method="POST">
+    <label for="name">Ad Soyad</label>
+    <input type="text" id="name" name="name" placeholder="Adınız Soyadınız" required>
+
+    <label for="email">E-posta</label>
+    <input type="email" id="email" name="email" placeholder="ornek@mail.com" required>
+
+    <label for="subject">Konu</label>
+    <select id="subject" name="subject">
+      <option value="general">Genel Bilgi</option>
+      <option value="order">Sipariş Durumu</option>
+      <option value="support">Teknik Destek</option>
+      <option value="other">Diğer</option>
+    </select>
+
+    <label for="message">Mesajınız</label>
+    <textarea id="message" name="message" placeholder="Mesajınızı buraya yazın..." required></textarea>
+
+    <button type="submit" class="btn">Gönder</button>
+  </form>
+</div>
+
+<footer>&copy; 2026 TechMarket. Tüm hakları saklıdır.</footer>
+
+</body>
+</html>

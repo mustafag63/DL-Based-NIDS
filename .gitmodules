@@ -1,0 +1,3 @@
+[submodule "experiments/ids-analysis/ANALYS-BENIGN"]
+	path = experiments/ids-analysis/ANALYS-BENIGN
+	url = https://github.com/mustafag63/Analysis-Trafic-Benign.git
